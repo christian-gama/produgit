@@ -22,6 +22,7 @@ type GitLog struct {
 type ReportConfig struct {
 	StartingDir string
 	Author      string
+	OutputDir   string
 }
 
 var config ReportConfig
@@ -42,12 +43,23 @@ func processDir(path string, d fs.DirEntry, allLogs *[]*GitLog) error {
 }
 
 func runReport(cmd *cobra.Command, args []string) {
+	if len(config.Author) == 0 {
+		if err := cmd.Help(); err != nil {
+			panic(fmt.Sprintf("Error: %s", err))
+		}
+		panic("\nError: required flag(s) \"author\" not set")
+	}
+
 	var allLogs []*GitLog
 
 	err := filepath.WalkDir(
 		config.StartingDir,
 		func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
+				if strings.Contains(err.Error(), "permission denied") {
+					return nil
+				}
+
 				return err
 			}
 			return processDir(path, d, &allLogs)
@@ -62,7 +74,11 @@ func runReport(cmd *cobra.Command, args []string) {
 		panic(fmt.Sprintf("JSON marshaling failed: %s\n", err))
 	}
 
-	err = os.WriteFile("output.json", jsonData, 0600)
+	if config.OutputDir == "" {
+		config.OutputDir = config.StartingDir
+	}
+
+	err = os.WriteFile(filepath.Join(config.OutputDir, "output.json"), jsonData, 0600)
 	if err != nil {
 		panic(fmt.Sprintf("Writing to JSON file failed: %s\n", err))
 	}
@@ -160,9 +176,13 @@ func getGitLogs(repoPath string) []*GitLog {
 	}
 
 	args := append(baseArgs, excludeArgs...)
-	cmdOut, _, err := runCommand("git", args)
+	cmdOut, stdErr, err := runCommand("git", args)
 	if err != nil {
-		panic(fmt.Sprintf("Command failed with error: %s", err))
+		if strings.Contains(stdErr, "does not have any commits yet") {
+			return make([]*GitLog, 0)
+		}
+
+		panic(fmt.Sprintf("Command failed with error: %s\n%s", err, stdErr))
 	}
 
 	return parseGitLogs(cmdOut)

@@ -12,12 +12,15 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
 )
 
 type PlotConfig struct {
 	OutputFile string
 	Extension  string
 	Type       string
+	StartDate  string
+	FinishDate string
 }
 
 var plotConfig PlotConfig
@@ -33,34 +36,77 @@ func runPlot(cmd *cobra.Command, args []string) {
 		"tiff": true,
 	}
 	if !validExtensions[plotConfig.Extension] {
-		fmt.Printf(
-			"Invalid extension: %s. Valid extensions are png, svg, pdf, tif.\n",
-			plotConfig.Extension,
+		panic(
+			fmt.Sprintf(
+				"Invalid extension: %s. Valid extensions are png, svg, pdf, tif.\n",
+				plotConfig.Extension,
+			),
 		)
-		return
 	}
 
+	data := getData()
+
+	switch plotConfig.Type {
+	case "monthly":
+		monthly(data)
+
+	case "weekday":
+		weekday(data)
+
+	case "timeofday":
+		timeOfDay(data)
+
+	default:
+		panic(
+			fmt.Sprintf(
+				"Invalid plot type: %s. Valid types are monthly, weekday, timeofday.\n",
+				plotConfig.Type,
+			),
+		)
+	}
+}
+
+func getData() []*GitLog {
 	byteValue, err := os.ReadFile("output.json")
 	if err != nil {
 		panic(err)
 	}
 
-	var data []GitLog
+	var data []*GitLog
 	if err := json.Unmarshal(byteValue, &data); err != nil {
 		panic(err)
 	}
 
+	startDate, err := time.Parse("2006-01-02", plotConfig.StartDate)
+	if err != nil {
+		panic(err)
+	}
+
+	endDate, err := time.Parse("2006-01-02", plotConfig.FinishDate)
+	if err != nil {
+		panic(err)
+	}
+
+	if plotConfig.Type == "monthly" && endDate.Sub(startDate).Hours() > 24*365*2.5 {
+		panic("The period for 'monthly' must be less than 2 years and 6 months.")
+	}
+
 	// Convert date strings to time.Time and sort
-	var formattedData []GitLog
+	var formattedData []*GitLog
 	for _, entry := range data {
 		dateStr := entry.Date
 		date, err := time.Parse("2006-01-02 15:04", dateStr)
 		if err != nil {
 			panic(err)
 		}
+
+		if date.Before(startDate) || date.After(endDate) {
+			continue
+		}
+
 		formattedData = append(
 			formattedData,
-			GitLog{Date: date.Format("2006-01-02 15:04"), Plus: entry.Plus},
+			&GitLog{Date: date.Format("2006-01-02 15:04"), Plus: entry.Plus},
 		)
 	}
 
@@ -70,25 +116,13 @@ func runPlot(cmd *cobra.Command, args []string) {
 		return dateI.Before(dateJ)
 	})
 
-	switch plotConfig.Type {
-	case "monthly":
-		monthly(formattedData)
-	case "weekday":
-		weekday(formattedData)
-	case "time":
-		timeOfDay(formattedData)
-	default:
-		fmt.Printf(
-			"Invalid plot type: %s. Valid types are monthly, weekday, time.\n",
-			plotConfig.Type,
-		)
-	}
+	return formattedData
 }
 
-func monthly(formattedData []GitLog) {
+func monthly(data []*GitLog) {
 	// Organize data by year and month
 	monthlyPlus := make(map[string]int)
-	for _, entry := range formattedData {
+	for _, entry := range data {
 		date, _ := time.Parse("2006-01-02 15:04", entry.Date)
 		yearMonth := date.Format("2006-01")
 		monthlyPlus[yearMonth] += entry.Plus
@@ -101,46 +135,56 @@ func monthly(formattedData []GitLog) {
 	}
 	sort.Strings(sortedKeys)
 
-	// trim to a max of 24 months
-	if len(sortedKeys) > 24 {
-		sortedKeys = sortedKeys[len(sortedKeys)-24:]
-	}
-
-	// Extract sorted labels and values for the graph
 	var sortedLabels []string
 	var sortedValues plotter.Values
 	for _, k := range sortedKeys {
 		sortedLabels = append(sortedLabels, k)
 		sortedValues = append(sortedValues, float64(monthlyPlus[k]))
 	}
-	p := plot.New()
-	p.Title.Text = "Quantidade de Linhas de Código Escritas por Mês"
-	p.X.Label.Text = "Mês"
-	p.Y.Label.Text = "Quantidade de Linhas de Código"
 
-	w := vg.Points(22)
-
+	p, w := prettifyPlot(sortedLabels)
 	bars, err := plotter.NewBarChart(sortedValues, w)
 	if err != nil {
 		panic(err)
 	}
 	bars.LineStyle.Width = vg.Length(0)
 	bars.Color = color.RGBA{R: 72, G: 61, B: 139, A: 255}
-
 	p.Add(bars)
-	p.NominalX(sortedLabels...)
+	p.Title.Text = "Quantidade de Linhas de Código Escritas por Mês"
+	p.X.Label.Text = "Mês"
+	p.Y.Label.Text = "Quantidade de Linhas de Código"
 
+	save(p)
+}
+
+func prettifyPlot(keys []string) (p *plot.Plot, w vg.Length) {
+	p = plot.New()
+	p.X.Padding = 1 * vg.Centimeter
+	p.Y.Padding = 1 * vg.Centimeter
+	p.Title.Padding = 2 * vg.Centimeter
+	p.Title.TextStyle.Font.Size = vg.Points(24)
+	p.X.Label.TextStyle.Font.Size = vg.Points(20)
+	p.Y.Label.TextStyle.Font.Size = vg.Points(20)
+	p.X.Max = float64(len(keys))
+	p.X.Tick.Label.Rotation = 45
+	p.X.Tick.Label.XAlign = draw.XCenter
+	w = vg.Points(600 / float64(len(keys)))
+	p.NominalX(keys...)
+	return p, w
+}
+
+func save(p *plot.Plot) {
 	filename := fmt.Sprintf("%s.%s", plotConfig.OutputFile, plotConfig.Extension)
-	if err := p.Save(50*vg.Centimeter, 30*vg.Centimeter, filename); err != nil {
+	if err := p.Save(40*vg.Centimeter, 28*vg.Centimeter, filename); err != nil {
 		panic(err)
 	}
 }
 
-func weekday(formattedData []GitLog) {
+func weekday(data []*GitLog) {
 	weekdayPlus := make(map[string]int)
 	weekdayLabels := []string{"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"}
 
-	for _, entry := range formattedData {
+	for _, entry := range data {
 		date, _ := time.Parse("2006-01-02 15:04", entry.Date)
 		day := weekdayLabels[int(date.Weekday())]
 		weekdayPlus[day] += entry.Plus
@@ -151,43 +195,36 @@ func weekday(formattedData []GitLog) {
 		sortedValues = append(sortedValues, float64(weekdayPlus[day]))
 	}
 
-	p := plot.New()
-	p.Title.Text = "Quantidade de Linhas de Código Escritas por Dia da Semana"
-	p.X.Label.Text = "Dia da Semana"
-	p.Y.Label.Text = "Quantidade de Linhas de Código"
-
-	w := vg.Points(120)
-
+	p, w := prettifyPlot(weekdayLabels)
 	bars, err := plotter.NewBarChart(sortedValues, w)
 	if err != nil {
 		panic(err)
 	}
+
 	bars.LineStyle.Width = vg.Length(0)
 	bars.Color = color.RGBA{R: 0, G: 0, B: 128, A: 255}
-
 	p.Add(bars)
-	p.NominalX(weekdayLabels...)
+	p.Title.Text = "Quantidade de Linhas de Código Escritas por Dia da Semana"
+	p.X.Label.Text = "Dia da Semana"
+	p.Y.Label.Text = "Quantidade de Linhas de Código"
 
-	filename := fmt.Sprintf("%s.%s", plotConfig.OutputFile, plotConfig.Extension)
-	if err := p.Save(50*vg.Centimeter, 30*vg.Centimeter, filename); err != nil {
-		panic(err)
-	}
+	save(p)
 }
 
-func timeOfDay(formattedData []GitLog) {
+func timeOfDay(data []*GitLog) {
 	timeOfDayPlus := make(map[string]int)
 	timeLabels := []string{"Madrugada", "Manhã", "Tarde", "Noite"}
 
-	for _, entry := range formattedData {
+	for _, entry := range data {
 		date, _ := time.Parse("2006-01-02 15:04", entry.Date)
 		hour := date.Hour()
 		var period string
 
-		if hour < 6 {
+		if hour >= 0 && hour < 7 {
 			period = "Madrugada"
-		} else if hour < 12 {
+		} else if hour >= 7 && hour < 13 {
 			period = "Manhã"
-		} else if hour < 18 {
+		} else if hour >= 13 && hour < 19 {
 			period = "Tarde"
 		} else {
 			period = "Noite"
@@ -201,25 +238,18 @@ func timeOfDay(formattedData []GitLog) {
 		sortedValues = append(sortedValues, float64(timeOfDayPlus[period]))
 	}
 
-	p := plot.New()
-	p.Title.Text = "Quantidade de Linhas de Código Escritas por Período do Dia"
-	p.X.Label.Text = "Período do Dia"
-	p.Y.Label.Text = "Quantidade de Linhas de Código"
-
-	w := vg.Points(210)
-
+	p, w := prettifyPlot(timeLabels)
 	bars, err := plotter.NewBarChart(sortedValues, w)
 	if err != nil {
 		panic(err)
 	}
+
 	bars.LineStyle.Width = vg.Length(0)
 	bars.Color = color.RGBA{R: 70, G: 130, B: 180, A: 255}
-
 	p.Add(bars)
-	p.NominalX(timeLabels...)
+	p.Title.Text = "Quantidade de Linhas de Código Escritas por Período do Dia"
+	p.X.Label.Text = "Período do Dia"
+	p.Y.Label.Text = "Quantidade de Linhas de Código"
 
-	filename := fmt.Sprintf("%s.%s", plotConfig.OutputFile, plotConfig.Extension)
-	if err := p.Save(50*vg.Centimeter, 30*vg.Centimeter, filename); err != nil {
-		panic(err)
-	}
+	save(p)
 }
