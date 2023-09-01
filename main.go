@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	toml "github.com/pelletier/go-toml"
 )
 
 type GitLog struct {
@@ -17,13 +19,36 @@ type GitLog struct {
 	Plus int    `json:"plus"`
 }
 
+type Config struct {
+	StartingDir string   `toml:"starting_dir"`
+	Author      string   `toml:"author"`
+	Excludes    []string `toml:"excludes"`
+}
+
+func loadConfig(path string) (*Config, error) {
+	config := &Config{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := toml.Unmarshal(data, config); err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
 func main() {
+	config, err := loadConfig("config.toml")
+	if err != nil {
+		fmt.Printf("Error loading config: %s\n", err)
+		return
+	}
+
 	var allLogs []*GitLog
-	var allRawLogs []string
 
-	startingDir := "."
-
-	err := filepath.WalkDir(startingDir, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(config.StartingDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -32,12 +57,11 @@ func main() {
 			parentDir := filepath.Dir(path)
 			fmt.Println("Found a .git repository:", parentDir)
 
-			logs, rawLogs, err := getGitLogs(parentDir)
+			logs, err := getGitLogs(parentDir, config)
 			if err != nil {
 				return err
 			}
 			allLogs = append(allLogs, logs...)
-			allRawLogs = append(allRawLogs, rawLogs...)
 			return filepath.SkipDir
 		}
 		return nil
@@ -56,58 +80,27 @@ func main() {
 	if err := writeJSONToFile("output.json", jsonData); err != nil {
 		fmt.Printf("Writing to JSON file failed: %s", err)
 	}
-
-	if err := os.WriteFile("output.txt", []byte(strings.Join(allRawLogs, "\n")), 0o600); err != nil {
-		fmt.Printf("Writing to text file failed: %s", err)
-	}
 }
 
-func getGitLogs(repoPath string) ([]*GitLog, []string, error) {
+func getGitLogs(repoPath string, config *Config) ([]*GitLog, error) {
 	absRepoPath, err := filepath.Abs(repoPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Could not convert to absolute path: %v", err)
+		return nil, fmt.Errorf("Could not convert to absolute path: %v", err)
 	}
 
 	args := []string{
 		"-C", absRepoPath, "log",
-		"--author=Christian",
+		"--author=" + config.Author,
 		"--pretty=format:'%ad,%s'",
 		"--date=format:'%Y-%m-%d %H:%M'",
 		"--numstat",
 		"--",
 		".",
-		":(exclude)node_modules/*",
-		":(exclude)*/node_modules/*",
-		":(exclude)vendor/*",
-		":(exclude)*/vendor/*",
-		":(exclude)go.sum",
-		":(exclude)yarn.lock",
-		":(exclude)package-lock.json",
-		":(exclude)pnp-lock.yaml",
-		":(exclude)pnpm-lock.yaml",
-		":(exclude)dist/*",
-		":(exclude)*/dist/*",
-		":(exclude)build/*",
-		":(exclude)*/build/*",
-		":(exclude).git/*",
-		":(exclude).idea/*",
-		":(exclude)mocks/*",
-		":(exclude)*/mocks/*",
-		":(exclude)*.csv",
-		":(exclude)*.pdf",
-		":(exclude)*.doc",
-		":(exclude)*.docx",
-		":(exclude)*.json",
-		":(exclude)*.png",
-		":(exclude)*.jpg",
-		":(exclude)*.jpeg",
-		":(exclude)*.gif",
-		":(exclude)*.svg",
-		":(exclude)*.ico",
-		":(exclude)*.woff",
-		":(exclude)*.woff2",
-		":(exclude)*.ttf",
-		":(exclude)*.eot",
+	}
+
+	// Add excludes from the TOML config
+	for _, exclude := range config.Excludes {
+		args = append(args, ":(exclude)"+exclude)
 	}
 
 	cmd := exec.Command("git", args...)
@@ -120,7 +113,7 @@ func getGitLogs(repoPath string) ([]*GitLog, []string, error) {
 	if err := cmd.Run(); err != nil {
 		fmt.Printf("Command failed with error: %v\n", err)
 		fmt.Printf("Stderr: %s\n", stderr.String())
-		return nil, nil, err
+		return nil, err
 	}
 
 	logs := make([]*GitLog, 0)
@@ -156,7 +149,7 @@ func getGitLogs(repoPath string) ([]*GitLog, []string, error) {
 		logs = append(logs, currentGitLog)
 	}
 
-	return logs, lines, nil
+	return logs, nil
 }
 
 func writeJSONToFile(filename string, data []byte) error {
