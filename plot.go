@@ -18,9 +18,11 @@ import (
 type PlotConfig struct {
 	OutputFile string
 	Extension  string
-	Type       string
 	StartDate  string
 	FinishDate string
+	Monthly    bool
+	Weekday    bool
+	TimeOfDay  bool
 }
 
 var plotConfig PlotConfig
@@ -45,29 +47,29 @@ func runPlot(cmd *cobra.Command, args []string) {
 	}
 
 	data := getData()
+	if len(data) == 0 {
+		panic("No data to plot.")
+	}
 
-	switch plotConfig.Type {
-	case "monthly":
+	if plotConfig.Monthly {
 		monthly(data)
+	}
 
-	case "weekday":
+	if plotConfig.Weekday {
 		weekday(data)
+	}
 
-	case "timeofday":
+	if plotConfig.TimeOfDay {
 		timeOfDay(data)
+	}
 
-	default:
-		panic(
-			fmt.Sprintf(
-				"Invalid plot type: %s. Valid types are monthly, weekday, timeofday.\n",
-				plotConfig.Type,
-			),
-		)
+	if !plotConfig.Monthly && !plotConfig.Weekday && !plotConfig.TimeOfDay {
+		panic("No plot type specified, please specify one of --monthly, --weekday, or --timeofday.")
 	}
 }
 
 func getData() []*GitLog {
-	byteValue, err := os.ReadFile("output.json")
+	byteValue, err := os.ReadFile("productivity_report_output.json")
 	if err != nil {
 		panic(err)
 	}
@@ -87,8 +89,12 @@ func getData() []*GitLog {
 		panic(err)
 	}
 
-	if plotConfig.Type == "monthly" && endDate.Sub(startDate).Hours() > 24*365*2.5 {
-		panic("The period for 'monthly' must be less than 2 years and 6 months.")
+	if endDate.Before(startDate) {
+		panic("Start date must be before end date.")
+	}
+
+	if plotConfig.Monthly && endDate.Sub(startDate).Hours() > 24*365*2.5 {
+		panic("Monthly plot only supported for 2.5 years of data or less.")
 	}
 
 	// Convert date strings to time.Time and sort
@@ -154,7 +160,7 @@ func monthly(data []*GitLog) {
 	p.X.Label.Text = "Mês"
 	p.Y.Label.Text = "Quantidade de Linhas de Código"
 
-	save(p)
+	save(p, "monthly")
 }
 
 func prettifyPlot(keys []string) (p *plot.Plot, w vg.Length) {
@@ -173,8 +179,8 @@ func prettifyPlot(keys []string) (p *plot.Plot, w vg.Length) {
 	return p, w
 }
 
-func save(p *plot.Plot) {
-	filename := fmt.Sprintf("%s.%s", plotConfig.OutputFile, plotConfig.Extension)
+func save(p *plot.Plot, t string) {
+	filename := fmt.Sprintf("%s.%s.%s", plotConfig.OutputFile, t, plotConfig.Extension)
 	if err := p.Save(40*vg.Centimeter, 28*vg.Centimeter, filename); err != nil {
 		panic(err)
 	}
@@ -208,7 +214,7 @@ func weekday(data []*GitLog) {
 	p.X.Label.Text = "Dia da Semana"
 	p.Y.Label.Text = "Quantidade de Linhas de Código"
 
-	save(p)
+	save(p, "weekday")
 }
 
 func timeOfDay(data []*GitLog) {
@@ -251,5 +257,5 @@ func timeOfDay(data []*GitLog) {
 	p.X.Label.Text = "Período do Dia"
 	p.Y.Label.Text = "Quantidade de Linhas de Código"
 
-	save(p)
+	save(p, "timeofday")
 }

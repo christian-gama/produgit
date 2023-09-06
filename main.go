@@ -19,6 +19,8 @@ var reportCmd = &cobra.Command{
 		"--author",
 		"--starting-dir",
 		"--output-dir",
+		"--exclude",
+		"--debug",
 	},
 }
 
@@ -29,7 +31,9 @@ var plotCmd = &cobra.Command{
 	ValidArgs: []string{
 		"--output-filename",
 		"--ext",
-		"--type",
+		"--monthly",
+		"--weekday",
+		"--timeofday",
 		"--start-date",
 		"--finish-date",
 	},
@@ -66,20 +70,28 @@ func configReportCmd() {
 
 	// get Author from git config user.name
 	cmd := exec.Command("git", "config", "--global", "user.email")
-	var author string
+	var author []string
 	out, err := cmd.Output()
 	if err == nil && len(out) == 0 {
-		author = string(out)
-		fmt.Printf("Using author: %s\n", author)
+		author = []string{string(out)}
+		fmt.Printf("Using author: %s\n", string(out))
 	}
 
 	reportCmd.
 		Flags().
-		StringVarP(&config.Author, "author", "a", author, "The author to filter git logs")
+		StringArrayVarP(&config.Authors, "author", "a", author, "The author to filter git logs")
 
 	reportCmd.
 		Flags().
 		StringVarP(&config.OutputDir, "output-dir", "o", "", "The output path for the report")
+
+	reportCmd.
+		Flags().
+		StringArrayVarP(&config.Exclude, "exclude", "e", []string{}, "The directories to exclude from the report")
+
+	reportCmd.
+		Flags().
+		BoolVar(&config.Debug, "debug", false, "Generate a debug report, which includes the raw git logs")
 }
 
 func configPlotCmd() {
@@ -93,7 +105,15 @@ func configPlotCmd() {
 
 	plotCmd.
 		Flags().
-		StringVarP(&plotConfig.Type, "type", "t", "monthly", "The type of the plot. The default is 'monthly'.")
+		BoolVar(&plotConfig.Monthly, "monthly", false, "Plot the data by month.")
+
+	plotCmd.
+		Flags().
+		BoolVar(&plotConfig.Weekday, "weekday", false, "Plot the data by week.")
+
+	plotCmd.
+		Flags().
+		BoolVar(&plotConfig.TimeOfDay, "timeofday", false, "Plot the data by time of day.")
 
 	plotCmd.
 		Flags().
@@ -102,10 +122,6 @@ func configPlotCmd() {
 	plotCmd.
 		Flags().
 		StringVarP(&plotConfig.FinishDate, "finish-date", "f", time.Now().Format("2006-01-02"), "The end date of the plot. The default is '3000-01-01'.")
-
-	if err := plotCmd.MarkFlagRequired("type"); err != nil {
-		panic(fmt.Sprintf("Marking flag as required failed: %s\n", err))
-	}
 
 	if err := plotCmd.RegisterFlagCompletionFunc(
 		"ext",
@@ -147,19 +163,6 @@ func configPlotCmd() {
 		"output-filename",
 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			return []string{}, cobra.ShellCompDirectiveNoFileComp
-		},
-	); err != nil {
-		panic(fmt.Sprintf("Registering flag completion function failed: %s\n", err))
-	}
-
-	if err := plotCmd.RegisterFlagCompletionFunc(
-		"type",
-		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return []string{
-				"monthly",
-				"weekday",
-				"timeofday",
-			}, cobra.ShellCompDirectiveDefault
 		},
 	); err != nil {
 		panic(fmt.Sprintf("Registering flag completion function failed: %s\n", err))

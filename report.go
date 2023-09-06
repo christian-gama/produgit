@@ -21,20 +21,23 @@ type GitLog struct {
 
 type ReportConfig struct {
 	StartingDir string
-	Author      string
+	Authors     []string
 	OutputDir   string
+	Exclude     []string
+	Debug       bool
 }
 
 var config ReportConfig
 
-func processDir(path string, d fs.DirEntry, allLogs *[]*GitLog) error {
+func processDir(path string, d fs.DirEntry, formattedLogs *[]*GitLog, rawLogs *[]string) error {
 	if d.IsDir() && d.Name() == ".git" {
 		parentDir := filepath.Dir(path)
 		fmt.Println("Processing directory: ", parentDir)
 
-		logs := getGitLogs(parentDir)
+		logs, lines := getGitLogs(parentDir)
 
-		*allLogs = append(*allLogs, logs...)
+		*formattedLogs = append(*formattedLogs, logs...)
+		*rawLogs = append(*rawLogs, lines...)
 
 		return filepath.SkipDir
 	}
@@ -43,14 +46,15 @@ func processDir(path string, d fs.DirEntry, allLogs *[]*GitLog) error {
 }
 
 func runReport(cmd *cobra.Command, args []string) {
-	if len(config.Author) == 0 {
+	if len(config.Authors) == 0 {
 		if err := cmd.Help(); err != nil {
 			panic(fmt.Sprintf("Error: %s", err))
 		}
 		panic("\nError: required flag(s) \"author\" not set")
 	}
 
-	var allLogs []*GitLog
+	var formattedLogs []*GitLog
+	var rawLogs []string
 
 	err := filepath.WalkDir(
 		config.StartingDir,
@@ -62,14 +66,14 @@ func runReport(cmd *cobra.Command, args []string) {
 
 				return err
 			}
-			return processDir(path, d, &allLogs)
+			return processDir(path, d, &formattedLogs, &rawLogs)
 		},
 	)
 	if err != nil {
 		panic(fmt.Sprintf("Walking the directory tree failed: %s\n", err))
 	}
 
-	jsonData, err := json.Marshal(allLogs)
+	jsonData, err := json.Marshal(formattedLogs)
 	if err != nil {
 		panic(fmt.Sprintf("JSON marshaling failed: %s\n", err))
 	}
@@ -78,13 +82,42 @@ func runReport(cmd *cobra.Command, args []string) {
 		config.OutputDir = config.StartingDir
 	}
 
-	err = os.WriteFile(filepath.Join(config.OutputDir, "output.json"), jsonData, 0600)
+	if _, err := os.Stat(filepath.Join(config.OutputDir, "productivity_report_output.json")); err == nil {
+		err = os.Remove(filepath.Join(config.OutputDir, "productivity_report_output.json"))
+		if err != nil {
+			panic(fmt.Sprintf("Removing existing JSON file failed: %s\n", err))
+		}
+	}
+
+	err = os.WriteFile(
+		filepath.Join(config.OutputDir, "productivity_report_output.json"),
+		jsonData,
+		0600,
+	)
 	if err != nil {
 		panic(fmt.Sprintf("Writing to JSON file failed: %s\n", err))
 	}
+
+	if config.Debug {
+		if _, err := os.Stat(filepath.Join(config.OutputDir, "productivity_report_output_debug.txt")); err == nil {
+			err = os.Remove(filepath.Join(config.OutputDir, "productivity_report_output_debug.txt"))
+			if err != nil {
+				panic(fmt.Sprintf("Removing existing debug file failed: %s\n", err))
+			}
+		}
+
+		err = os.WriteFile(
+			filepath.Join(config.OutputDir, "productivity_report_output_debug.txt"),
+			[]byte(strings.Join(rawLogs, "\n")),
+			0600,
+		)
+		if err != nil {
+			panic(fmt.Sprintf("Writing to debug file failed: %s\n", err))
+		}
+	}
 }
 
-func getGitLogs(repoPath string) []*GitLog {
+func getGitLogs(repoPath string) ([]*GitLog, []string) {
 	absRepoPath, err := filepath.Abs(repoPath)
 	if err != nil {
 		panic(fmt.Sprintf("Could not convert to absolute path: %s", err))
@@ -92,7 +125,7 @@ func getGitLogs(repoPath string) []*GitLog {
 
 	baseArgs := []string{
 		"-C", absRepoPath, "log",
-		fmt.Sprintf("--author=%s", config.Author),
+		fmt.Sprintf("--author=%s", strings.Join(config.Authors, "\\|")),
 		"--pretty=format:'%ad,%s'",
 		"--date=format:'%Y-%m-%d %H:%M'",
 		"--numstat",
@@ -101,42 +134,32 @@ func getGitLogs(repoPath string) []*GitLog {
 	}
 
 	excludeItems := []string{
-		"**/node_modules/*",
-		"node_modules/*",
-		"**/vendor/*",
-		"vendor/*",
-		"go.sum",
-		"yarn.lock",
-		"package-lock.json",
-		"pnpm-lock.yaml",
-		"**/dist/*",
-		"dist/*",
-		"**/build/*",
-		"build/*",
-		"**/.git/*",
-		".git/*",
-		"**/.idea/*",
-		".idea/*",
-		"**/mocks/*",
-		"mocks/*",
-		"**/.vscode/*",
-		".vscode/*",
+		"**node_modules/*",
+		"**vendor/*",
+		"**go.sum",
+		"**go.mod",
+		"**yarn.lock",
+		"**package-lock.json",
+		"**requirements.txt",
+		"**pnpm-lock.yaml",
+		"**dist/*",
+		"**build/*",
+		"**assets/*",
+		"**.git/*",
+		"**.idea/*",
+		"**mocks/*",
+		"**.vscode/*",
 		"**/.pytest_cache/*",
-		".pytest_cache/*",
-		"**/.next/*",
+		"**.pytest_cache/*",
+		"**.next/*",
 		".next/*",
-		"**/.cache/*",
-		".cache/*",
-		"**/__pycache__/*",
-		"__pycache__/*",
-		"**/coverage/*",
-		"coverage/*",
-		"**/coverage.xml",
-		"coverage.xml",
-		"**/coverage.html",
-		"coverage.html",
-		"**/coverage.lcov",
-		"coverage.lcov",
+		"**.cache/*",
+		"**__pycache__/*",
+		"**coverage/*",
+		"**coverage.xml",
+		"**coverage.html",
+		"**coverage.lcov",
+		"**LICENSE.md",
 		"*.csv",
 		"*.pdf",
 		"*.doc",
@@ -153,8 +176,8 @@ func getGitLogs(repoPath string) []*GitLog {
 		"*.ttf",
 		"*.eot",
 		"*.txt",
-		".DS_Store",
-		"Thumbs.db",
+		"**.DS_Store",
+		"**Thumbs.db",
 		"*.log",
 		"*.bak",
 		"*.swp",
@@ -166,8 +189,12 @@ func getGitLogs(repoPath string) []*GitLog {
 		"*.jar",
 		"*.war",
 		"*.ear",
-		"db.sqlite3",
+		"*.sqlite3",
+		"android/*",
+		"ios/*",
 	}
+
+	excludeItems = append(excludeItems, config.Exclude...)
 
 	// Prefix each item with ":(exclude)"
 	excludeArgs := make([]string, len(excludeItems))
@@ -179,7 +206,7 @@ func getGitLogs(repoPath string) []*GitLog {
 	cmdOut, stdErr, err := runCommand("git", args)
 	if err != nil {
 		if strings.Contains(stdErr, "does not have any commits yet") {
-			return make([]*GitLog, 0)
+			return make([]*GitLog, 0), make([]string, 0)
 		}
 
 		panic(fmt.Sprintf("Command failed with error: %s\n%s", err, stdErr))
@@ -206,7 +233,7 @@ var (
 	plusRegex = regexp.MustCompile(`(\d+)\t(\d+)\t`)
 )
 
-func parseGitLogs(output string) []*GitLog {
+func parseGitLogs(output string) ([]*GitLog, []string) {
 	logs := make([]*GitLog, 0)
 	lines := strings.Split(output, "\n")
 
@@ -239,5 +266,5 @@ func parseGitLogs(output string) []*GitLog {
 		logs = append(logs, currentGitLog)
 	}
 
-	return logs
+	return logs, lines
 }
