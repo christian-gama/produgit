@@ -3,6 +3,7 @@ module github.com/christian-gama/productivity
 go 1.20
 
 require (
+	github.com/go-echarts/go-echarts/v2 v2.2.7
 	github.com/spf13/cobra v1.7.0
 	gonum.org/v1/plot v0.14.0
 )
