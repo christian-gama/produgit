@@ -10,7 +10,6 @@ import (
 
 func TestGetLog(t *testing.T) {
 	config := &Config{
-		Authors: []string{"Christian"},
 		Exclude: []string{},
 	}
 	repoPath := getGitDir()
@@ -45,7 +44,6 @@ func TestGetLog_NoCommitsYet(t *testing.T) {
 	}()
 
 	config := &Config{
-		Authors: []string{"Christian"},
 		Exclude: []string{},
 	}
 
@@ -65,20 +63,10 @@ func TestGetLog_NoGit(t *testing.T) {
 	}()
 
 	config := &Config{
-		Authors: []string{"Christian"},
 		Exclude: []string{},
 	}
 
 	GetLog(tmpDir, config)
-}
-
-func TestGetLog_UseGlobalAuthor(t *testing.T) {
-	config := &Config{}
-	checkAuthor(config)
-
-	if len(config.Authors) != 1 {
-		t.Errorf("Expected 1 author, got %d", len(config.Authors))
-	}
 }
 
 func getGitDir() string {

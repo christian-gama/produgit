@@ -25,7 +25,6 @@ type Log struct {
 
 func Parse(output []string) []*Log {
 	logs := make([]*Log, 0)
-
 	log := &Log{}
 
 	for _, line := range output {
@@ -36,17 +35,18 @@ func Parse(output []string) []*Log {
 			}
 			log.Date = date
 
-			email := matches[2]
-			if strings.TrimSpace(email) == "" {
-				author := matches[3]
-				if strings.TrimSpace(author) == "" {
-					log.Author = "Unknown"
-				} else {
-					log.Author = author
-				}
-			} else {
-				log.Author = email
+			name := matches[3]
+			if name == "" {
+				name = "Unknown Name"
 			}
+
+			email := matches[2]
+			if email == "" {
+				email = "Unknown Email"
+			}
+
+			author := strings.TrimSpace(fmt.Sprintf("%s (%s)", name, email))
+			log.Author = author
 
 			continue
 		}
@@ -75,19 +75,19 @@ func Parse(output []string) []*Log {
 		}
 	}
 
-	sort.Stable(logSlice(logs))
+	sort.Stable(LogSlice(logs))
 
 	return logs
 }
 
-// logSlice is a custom type to make sorting Logs easier.
-type logSlice []*Log
+// LogSlice is a custom type to make sorting Logs easier.
+type LogSlice []*Log
 
-func (s logSlice) Len() int {
+func (s LogSlice) Len() int {
 	return len(s)
 }
 
-func (s logSlice) Less(i, j int) bool {
+func (s LogSlice) Less(i, j int) bool {
 	if s[i].Author < s[j].Author {
 		return true
 	} else if s[i].Author > s[j].Author {
@@ -112,6 +112,6 @@ func (s logSlice) Less(i, j int) bool {
 	return s[i].Diff < s[j].Diff
 }
 
-func (s logSlice) Swap(i, j int) {
+func (s LogSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }

@@ -10,7 +10,6 @@ import (
 )
 
 type Config struct {
-	Authors []string
 	Exclude []string
 }
 
@@ -22,6 +21,7 @@ var excludeItems = []string{
 	"**yarn.lock",
 	"**package-lock.json",
 	"**requirements.txt",
+	"**venv/*",
 	"**pnpm-lock.yaml",
 	"**dist/*",
 	"**build/*",
@@ -77,10 +77,9 @@ var excludeItems = []string{
 
 func GetLog(repoPath string, config *Config) []string {
 	checkGitExists()
-	checkAuthor(config)
 
 	args := createBaseArgs(repoPath, config)
-	args = append(args, createExcludeArgs(excludeItems)...)
+	args = append(args, createExcludeArgs(config.Exclude)...)
 
 	cmdOut, err := cmd.Run("git", args...)
 	if err != nil && !strings.Contains(err.Error(), "does not have any commits yet") {
@@ -90,10 +89,18 @@ func GetLog(repoPath string, config *Config) []string {
 	return strings.Split(cmdOut, "\n")
 }
 
-func createExcludeArgs(excludeItems []string) []string {
-	excludeArgs := make([]string, len(excludeItems))
-	for i, item := range excludeItems {
-		excludeArgs[i] = fmt.Sprintf(":(exclude)%s", item)
+func createExcludeArgs(exclude []string) []string {
+	excludeArgs := make([]string, 0, len(exclude)+len(excludeItems))
+	for _, item := range exclude {
+		if item != "" {
+			excludeArgs = append(excludeArgs, fmt.Sprintf(":(exclude)%s", item))
+		}
+	}
+
+	for _, item := range excludeItems {
+		if item != "" {
+			excludeArgs = append(excludeArgs, fmt.Sprintf(":(exclude)%s", item))
+		}
 	}
 
 	return excludeArgs
@@ -107,7 +114,6 @@ func createBaseArgs(repoPath string, config *Config) []string {
 
 	return []string{
 		"-C", absRepoPath, "log",
-		fmt.Sprintf("--author=%s", strings.Join(config.Authors, "\\|")),
 		"--pretty=format:%ad,%ae,%an",
 		"--date=format:'%Y-%m-%d %H:%M'",
 		"--numstat",
@@ -119,27 +125,5 @@ func createBaseArgs(repoPath string, config *Config) []string {
 func checkGitExists() {
 	if _, err := exec.LookPath("git"); err != nil {
 		panic(fmt.Sprintf("Error: %s\n", err))
-	}
-}
-
-func checkAuthor(config *Config) {
-	if len(config.Authors) == 0 {
-		cmdOut, err := cmd.Run("git", "config", "--global", "user.email")
-		if err != nil {
-			panic(fmt.Sprintf("Could not run git config: %s", err))
-		}
-
-		if cmdOut == "" {
-			cmdOut, err = cmd.Run("git", "config", "--global", "user.name")
-			if err != nil {
-				panic(fmt.Sprintf("Could not run git config: %s", err))
-			}
-		}
-
-		config.Authors = []string{strings.TrimSpace(cmdOut)}
-	}
-
-	if len(config.Authors) == 0 {
-		panic("No author provided")
 	}
 }

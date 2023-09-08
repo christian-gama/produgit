@@ -2,88 +2,103 @@ package plot
 
 import (
 	"fmt"
+	"io"
 	"os"
-	"sort"
+	"strings"
 
-	"github.com/christian-gama/productivity/pkg/gitlog"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
-func Monthly(data []*gitlog.Log) {
-	monthlyPlusBySpecificAuthor := make(map[string]int)
-	monthlyPlusByAnotherAuthor := make(map[string]int)
-	specificAuthor := "example@email.com"
-	anotherAuthor := "example2@email.com"
+type renderer interface {
+	Render(io.Writer) error
+}
 
-	for _, entry := range data {
-		yearMonth := entry.Date.Format("2006-01")
-		if entry.Author == specificAuthor {
-			monthlyPlusBySpecificAuthor[yearMonth] += entry.Plus
-		}
-		if entry.Author == anotherAuthor {
-			monthlyPlusByAnotherAuthor[yearMonth] += entry.Plus
+func save(graph string, config *Config, filterConfig *FilterConfig, render renderer) {
+	config.Output = createFileName(graph, config, filterConfig)
+
+	if _, err := os.Stat(config.Output); err == nil {
+		err = os.Remove(config.Output)
+		if err != nil {
+			panic(fmt.Sprintf("Removing existing file %s failed: %v", config.Output, err))
 		}
 	}
 
-	var sortedLabels []string
-	var sortedKeys []string
-	keySet := make(map[string]bool)
-
-	for k := range monthlyPlusBySpecificAuthor {
-		keySet[k] = true
-	}
-	for k := range monthlyPlusByAnotherAuthor {
-		keySet[k] = true
+	f, err := os.Create(config.Output)
+	if err != nil {
+		panic(fmt.Sprintf("Could not create file %s: %v", config.Output, err))
 	}
 
-	for k := range keySet {
-		sortedKeys = append(sortedKeys, k)
+	err = render.Render(f)
+	if err != nil {
+		panic(fmt.Sprintf("Could not render file %s: %v", config.Output, err))
+	}
+}
+
+func createFileName(graph string, config *Config, filterConfig *FilterConfig) string {
+	fileName := config.Output
+	fileName = fmt.Sprintf("%s%s_%s", fileName, graph, strings.Join(filterConfig.Authors, "_"))
+
+	if filterConfig.StartDate.IsZero() {
+		fileName = fmt.Sprintf("%s_%s", fileName, filterConfig.EndDate.Format("2006-01-02"))
 	}
 
-	sort.Strings(sortedKeys)
-
-	var sortedValuesBySpecificAuthor, sortedValuesByAnotherAuthor []opts.BarData
-	for _, k := range sortedKeys {
-		sortedLabels = append(sortedLabels, k)
-		sortedValuesBySpecificAuthor = append(
-			sortedValuesBySpecificAuthor,
-			opts.BarData{Value: monthlyPlusBySpecificAuthor[k]},
-		)
-		sortedValuesByAnotherAuthor = append(
-			sortedValuesByAnotherAuthor,
-			opts.BarData{Value: monthlyPlusByAnotherAuthor[k]},
-		)
-	}
-
-	bar := charts.NewBar()
-	bar.SetGlobalOptions(
-		charts.WithTitleOpts(opts.Title{
-			Title: "Code written per month",
-		}),
-		charts.WithXAxisOpts(opts.XAxis{
-			Data: sortedLabels,
-			Name: "Month",
-		}),
-		charts.WithYAxisOpts(opts.YAxis{
-			Name: "Lines of code",
-		}),
+	fileName = fmt.Sprintf(
+		"%s_%s_%s",
+		fileName,
+		filterConfig.StartDate.Format("2006-01-02"),
+		filterConfig.EndDate.Format("2006-01-02"),
 	)
 
-	// Add the data
-	bar.SetXAxis(sortedLabels).
-		AddSeries(specificAuthor, sortedValuesBySpecificAuthor).
-		AddSeries("fulano@gmail.com", sortedValuesByAnotherAuthor)
+	return fmt.Sprintf("%s.html", fileName)
+}
 
-	// Save the chart
-	filename := "plot.monthly.html"
-	f, err := os.Create(filename)
-	if err != nil {
-		fmt.Println(err)
+func createBarHeader(
+	title string,
+	bar *charts.Bar,
+	filterConfig *FilterConfig,
+	o ...charts.GlobalOpts,
+) {
+	subtitle := ""
+	if filterConfig.StartDate.IsZero() {
+		subtitle = fmt.Sprintf(
+			"From the beginning to %s",
+			filterConfig.EndDate.Format("2006-01-02"),
+		)
+	} else {
+		subtitle = fmt.Sprintf(
+			"From %s to %s",
+			filterConfig.StartDate.Format("2006-01-02"),
+			filterConfig.EndDate.Format("2006-01-02"),
+		)
 	}
 
-	err = bar.Render(f)
-	if err != nil {
-		fmt.Println(err)
+	bar.SetGlobalOptions(
+		append(o, charts.WithTitleOpts(opts.Title{Title: title, Subtitle: subtitle}))...,
+	)
+}
+
+func createPieHeader(
+	title string,
+	pie *charts.Pie,
+	filterConfig *FilterConfig,
+	o ...charts.GlobalOpts,
+) {
+	subtitle := ""
+	if filterConfig.StartDate.IsZero() {
+		subtitle = fmt.Sprintf(
+			"From the beginning to %s",
+			filterConfig.EndDate.Format("2006-01-02"),
+		)
+	} else {
+		subtitle = fmt.Sprintf(
+			"From %s to %s",
+			filterConfig.StartDate.Format("2006-01-02"),
+			filterConfig.EndDate.Format("2006-01-02"),
+		)
 	}
+
+	pie.SetGlobalOptions(
+		append(o, charts.WithTitleOpts(opts.Title{Title: title, Subtitle: subtitle}))...,
+	)
 }

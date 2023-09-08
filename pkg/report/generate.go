@@ -34,7 +34,6 @@ func processDir(config *Config) []*gitlog.Log {
 			if d.IsDir() && d.Name() == ".git" {
 				fmt.Printf("Processing %s\n", strings.TrimSuffix(path, "/.git"))
 				rawLogs = gitlog.GetLog(filepath.Dir(path), &gitlog.Config{
-					Authors: config.Authors,
 					Exclude: config.Exclude,
 				})
 				if err != nil {

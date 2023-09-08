@@ -35,7 +35,7 @@ func TestParse(t *testing.T) {
 			Minus:  5,
 			Diff:   3,
 			Path:   "src/scripts/core/{confirmAccount.ts => confirm.ts}",
-			Author: "example@email.com",
+			Author: "Author Name (example@email.com)",
 		},
 		{
 			Date:   time.Date(2021, 7, 30, 7, 23, 0, 0, time.UTC),
@@ -43,7 +43,7 @@ func TestParse(t *testing.T) {
 			Minus:  10,
 			Diff:   93,
 			Path:   "public/css/style.css",
-			Author: "example@email.com",
+			Author: "Author Name (example@email.com)",
 		},
 		{
 			Date:   time.Date(2021, 7, 30, 7, 23, 0, 0, time.UTC),
@@ -51,7 +51,7 @@ func TestParse(t *testing.T) {
 			Minus:  1,
 			Diff:   0,
 			Path:   "public/css/style.css.map",
-			Author: "example@email.com",
+			Author: "Author Name (example@email.com)",
 		},
 		{
 			Date:   time.Date(2021, 7, 30, 7, 23, 0, 0, time.UTC),
@@ -59,7 +59,7 @@ func TestParse(t *testing.T) {
 			Minus:  22,
 			Diff:   -17,
 			Path:   "src/scripts/DBConnection/accountDB.ts",
-			Author: "example@email.com",
+			Author: "Author Name (example@email.com)",
 		},
 
 		{
@@ -68,7 +68,7 @@ func TestParse(t *testing.T) {
 			Minus:  3,
 			Diff:   -3,
 			Path:   "src/domain/handler/handler.model.ts",
-			Author: "Author Name",
+			Author: "Author Name (Unknown Email)",
 		},
 		{
 			Date:   time.Date(2022, 1, 21, 19, 25, 0, 0, time.UTC),
@@ -76,7 +76,7 @@ func TestParse(t *testing.T) {
 			Minus:  6,
 			Diff:   -6,
 			Path:   "tests/e2e/cypress/plugins/index.ts",
-			Author: "Author Name",
+			Author: "Author Name (Unknown Email)",
 		},
 		{
 			Date:   time.Date(2022, 1, 21, 19, 25, 0, 0, time.UTC),
@@ -84,7 +84,7 @@ func TestParse(t *testing.T) {
 			Minus:  1,
 			Diff:   -1,
 			Path:   "tests/e2e/cypress/support/index.ts",
-			Author: "Author Name",
+			Author: "Author Name (Unknown Email)",
 		},
 
 		{
@@ -93,7 +93,7 @@ func TestParse(t *testing.T) {
 			Minus:  0,
 			Diff:   0,
 			Path:   "{src/external/@types => @types}/env.d.ts",
-			Author: "Unknown",
+			Author: "Unknown Name (Unknown Email)",
 		},
 		{
 			Date:   time.Date(2022, 1, 20, 1, 46, 0, 0, time.UTC),
@@ -101,7 +101,7 @@ func TestParse(t *testing.T) {
 			Minus:  0,
 			Diff:   1,
 			Path:   "{src/external/@types => @types}/index.d.ts",
-			Author: "Unknown",
+			Author: "Unknown Name (Unknown Email)",
 		},
 		{
 			Date:   time.Date(2022, 1, 20, 1, 46, 0, 0, time.UTC),
@@ -109,7 +109,7 @@ func TestParse(t *testing.T) {
 			Minus:  30,
 			Diff:   901,
 			Path:   "{src/external/@types => @types}/vite-env.d.ts",
-			Author: "Unknown",
+			Author: "Unknown Name (Unknown Email)",
 		},
 	}
 
