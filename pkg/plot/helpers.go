@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -101,4 +103,36 @@ func createPieHeader(
 	pie.SetGlobalOptions(
 		append(o, charts.WithTitleOpts(opts.Title{Title: title, Subtitle: subtitle}))...,
 	)
+}
+
+func getTimeOfDay(hour int) string {
+	if hour >= 0 && hour < 6 {
+		return "midnight"
+	} else if hour >= 6 && hour < 12 {
+		return "morning"
+	} else if hour >= 12 && hour < 18 {
+		return "afternoon"
+	} else if hour >= 18 && hour < 24 {
+		return "night"
+	} else {
+		return "midnight"
+	}
+}
+
+func getStartOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+func getDayOfWeek(day int) string {
+	return time.Weekday(day).String()
+}
+
+func identifyLanguage(path string) string {
+	ext := strings.ToLower(filepath.Ext(path))
+	if len(ext) > 1 {
+		if lang, ok := languages[ext[1:]]; ok {
+			return lang
+		}
+	}
+	return "Others"
 }

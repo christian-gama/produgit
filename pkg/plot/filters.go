@@ -2,13 +2,10 @@ package plot
 
 import (
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/christian-gama/productivity/pkg/gitlog"
-	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
 type FilterConfig struct {
@@ -16,30 +13,6 @@ type FilterConfig struct {
 	EndDate   time.Time
 	Period    string
 	Authors   []string
-}
-
-type Data struct {
-	Author   string
-	Language string
-	Plus     int
-	FileExt  string
-}
-
-func StartOfDay(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-}
-
-var (
-	now        = time.Now()
-	startOfDay = StartOfDay(now)
-)
-
-var periods = map[string][2]time.Time{
-	"today":      {startOfDay, now},
-	"24h":        {now.Add(-24 * time.Hour), now},
-	"this-week":  {startOfDay.Add(-7 * 24 * time.Hour), now},
-	"this-month": {time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()), now},
-	"this-year":  {time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()), now},
 }
 
 func NewFilterConfig(startDate, endDate time.Time, period string, authors []string) *FilterConfig {
@@ -67,8 +40,12 @@ func NewFilterConfig(startDate, endDate time.Time, period string, authors []stri
 
 	maxDuration := 30 * 30 * 24 * time.Hour
 	if strings.TrimSpace(period) == "" {
-		startDate = time.Now().Add(-maxDuration + 1*time.Second)
-		endDate = time.Now()
+		if startDate.IsZero() {
+			startDate = time.Now().Add(-maxDuration + 1*time.Second)
+		}
+		if endDate.IsZero() {
+			endDate = time.Now()
+		}
 	} else if p, ok := periods[period]; ok {
 		startDate = p[0]
 		endDate = p[1]
@@ -154,83 +131,4 @@ func filter(config *FilterConfig, logs []*gitlog.Log) []*gitlog.Log {
 	logs = filterByAuthor(logs, config.Authors)
 	logs = mergeAuthors(logs, config.Authors)
 	return logs
-}
-
-func uniqueMonths(dateFmt string, logs []*gitlog.Log) []string {
-	seen := make(map[string]struct{})
-	var result []string
-	for _, log := range logs {
-		monthYear := log.Date.Format(dateFmt)
-		if _, exists := seen[monthYear]; !exists {
-			result = append(result, monthYear)
-			seen[monthYear] = struct{}{}
-		}
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		t1, _ := time.Parse(dateFmt, result[i])
-		t2, _ := time.Parse(dateFmt, result[j])
-		return t1.Before(t2)
-	})
-
-	return result
-}
-
-func generateBarData(
-	labels []string, author string,
-	data map[string][]*Data,
-) []opts.BarData {
-	var result []opts.BarData
-
-	for _, label := range labels {
-		authorDataFound := false
-		if authorLogs, ok := data[label]; ok {
-			for _, log := range authorLogs {
-				if log.Author == author {
-					result = append(result, opts.BarData{Value: log.Plus})
-					authorDataFound = true
-					break
-				}
-			}
-		}
-		if !authorDataFound {
-			result = append(result, opts.BarData{Value: 0})
-		}
-	}
-	return result
-}
-
-func addSeries(
-	bar *charts.Bar,
-	labels []string,
-	authors []string,
-	data map[string][]*Data,
-) {
-	for _, author := range authors {
-		found := false
-
-		for _, label := range labels {
-			authorLogs, ok := data[label]
-			if !ok {
-				continue
-			}
-
-			for _, log := range authorLogs {
-				if log.Author == author {
-					found = true
-					break
-				}
-			}
-
-			if found {
-				break
-			}
-		}
-
-		if found {
-			bar.AddSeries(author, generateBarData(labels, author, data))
-		} else {
-			bar.AddSeries(author, []opts.BarData{})
-		}
-	}
 }
