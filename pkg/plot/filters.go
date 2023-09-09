@@ -31,6 +31,10 @@ func NewFilterConfig(startDate, endDate time.Time, period string, authors []stri
 		}
 	}
 
+	if period != "" && (!startDate.IsZero() || !endDate.IsZero()) {
+		panic("Period cannot be used with start date and end date")
+	}
+
 	maxDuration := 30 * 30 * 24 * time.Hour
 	if strings.TrimSpace(period) == "" {
 		if startDate.IsZero() {
@@ -59,14 +63,11 @@ func NewFilterConfig(startDate, endDate time.Time, period string, authors []stri
 		panic("The difference between start and end date cannot be greater than 2.5 years")
 	}
 
-	if period != "" && !startDate.IsZero() && !endDate.IsZero() {
-		panic("Period cannot be used with start date and end date")
-	}
-
 	return &FilterConfig{
 		StartDate: startDate,
 		EndDate:   endDate,
 		Authors:   authors,
+		Period:    period,
 	}
 }
 
