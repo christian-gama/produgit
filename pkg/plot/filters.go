@@ -1,6 +1,7 @@
 package plot
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -30,14 +31,6 @@ func NewFilterConfig(startDate, endDate time.Time, period string, authors []stri
 		}
 	}
 
-	if startDate.After(endDate) {
-		panic("Start date cannot be after end date")
-	}
-
-	if startDate.Equal(endDate) {
-		panic("Start date cannot be equal to end date")
-	}
-
 	maxDuration := 30 * 30 * 24 * time.Hour
 	if strings.TrimSpace(period) == "" {
 		if startDate.IsZero() {
@@ -51,6 +44,14 @@ func NewFilterConfig(startDate, endDate time.Time, period string, authors []stri
 		endDate = p[1]
 	} else {
 		panic("Invalid period")
+	}
+
+	if startDate.After(endDate) {
+		panic("Start date cannot be after end date")
+	}
+
+	if startDate.Equal(endDate) {
+		panic("Start date cannot be equal to end date")
 	}
 
 	diff := endDate.Sub(startDate)
@@ -84,7 +85,7 @@ func filterByAuthor(logs []*gitlog.Log, authors []string) []*gitlog.Log {
 
 	authorMap := make(map[string]string)
 	for _, author := range authors {
-		r, err := regexp.Compile(author)
+		r, err := regexp.Compile(fmt.Sprintf("(?i)%s", author))
 		if err != nil {
 			panic(err)
 		}
@@ -108,7 +109,7 @@ func filterByAuthor(logs []*gitlog.Log, authors []string) []*gitlog.Log {
 
 func mergeAuthors(logs []*gitlog.Log, authors []string) []*gitlog.Log {
 	var result []*gitlog.Log
-	r, err := regexp.Compile("(" + strings.Join(authors, "|") + ")")
+	r, err := regexp.Compile(fmt.Sprintf("(?i)(%s)", strings.Join(authors, "|")))
 	if err != nil {
 		panic(err)
 	}

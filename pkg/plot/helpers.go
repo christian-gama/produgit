@@ -76,7 +76,13 @@ func createBarHeader(
 	}
 
 	bar.SetGlobalOptions(
-		append(o, charts.WithTitleOpts(opts.Title{Title: title, Subtitle: subtitle}))...,
+		append(o, charts.WithTitleOpts(opts.Title{Title: title, Subtitle: subtitle}),
+			charts.WithTooltipOpts(opts.Tooltip{
+				Show:      true,
+				Trigger:   "axis",
+				Formatter: "{b} <br />{a} : {c}",
+			}),
+		)...,
 	)
 }
 
@@ -101,21 +107,29 @@ func createPieHeader(
 	}
 
 	pie.SetGlobalOptions(
-		append(o, charts.WithTitleOpts(opts.Title{Title: title, Subtitle: subtitle}))...,
+		append(
+			o,
+			charts.WithTitleOpts(opts.Title{Title: title, Subtitle: subtitle}),
+			charts.WithTooltipOpts(opts.Tooltip{
+				Show:      true,
+				Trigger:   "item",
+				Formatter: "{a} <br/>{b} : {c} ({d}%)",
+			}),
+		)...,
 	)
 }
 
 func getTimeOfDay(hour int) string {
 	if hour >= 0 && hour < 6 {
-		return "midnight"
+		return "Midnight"
 	} else if hour >= 6 && hour < 12 {
-		return "morning"
-	} else if hour >= 12 && hour < 18 {
-		return "afternoon"
-	} else if hour >= 18 && hour < 24 {
-		return "night"
+		return "Morning"
+	} else if hour >= 12 && hour < 19 {
+		return "Afternoon"
+	} else if hour >= 19 && hour < 24 {
+		return "Night"
 	} else {
-		return "midnight"
+		return "Midnight"
 	}
 }
 

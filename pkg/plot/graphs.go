@@ -3,6 +3,7 @@ package plot
 import (
 	"github.com/christian-gama/productivity/pkg/report"
 	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
 func Monthly(config *Config, filterConfig *FilterConfig) {
@@ -73,7 +74,11 @@ func TopAuthors(config *Config, filterConfig *FilterConfig) {
 	createPieHeader("Top Authors Report", pie, filterConfig)
 
 	pieData := generatePieData(formattedData)
-	pie.AddSeries("Authors", pieData)
+	pie.AddSeries("Authors", pieData, charts.WithLabelOpts(opts.Label{
+		Show:      true,
+		Formatter: "{b}: {d}%",
+	}),
+	)
 
 	save("top-authors", config, filterConfig, pie)
 }

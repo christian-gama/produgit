@@ -1,9 +1,8 @@
 package plot
 
 import (
-	"time"
-
 	"github.com/christian-gama/productivity/pkg/plot"
+	"github.com/christian-gama/productivity/pkg/utils/date"
 	"github.com/spf13/cobra"
 )
 
@@ -14,8 +13,8 @@ var topLanguages = &cobra.Command{
 		plot.TopAuthors(
 			plot.NewConfig(input, output),
 			plot.NewFilterConfig(
-				parseDate(startDate, time.Time{}),
-				parseDate(endDate, time.Now()),
+				date.Parse(startDate),
+				date.Parse(endDate),
 				period,
 				authors,
 			),

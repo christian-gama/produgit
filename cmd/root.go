@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/christian-gama/productivity/cmd/anomalies"
 	"github.com/christian-gama/productivity/cmd/plot"
 	"github.com/christian-gama/productivity/cmd/report"
 	"github.com/spf13/cobra"
@@ -14,6 +15,7 @@ var rootCmd = &cobra.Command{Use: "produgit", Short: "A productivity tool for gi
 func init() {
 	rootCmd.AddCommand(plot.PlotCmd)
 	rootCmd.AddCommand(report.ReportCmd)
+	rootCmd.AddCommand(anomalies.AnomaliesCmd)
 }
 
 func main() {
