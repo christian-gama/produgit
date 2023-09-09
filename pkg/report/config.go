@@ -18,7 +18,7 @@ func NewConfig(dir []string, authors []string, output string, exclude []string) 
 	}
 
 	if output == "" {
-		output = filepath.Join(".", "report")
+		output = filepath.Join(".", "produgit_report.json")
 	} else if filepath.Ext(output) != ".json" {
 		output = fmt.Sprintf("%s.json", output)
 	}
