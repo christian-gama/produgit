@@ -82,6 +82,10 @@ func createBarHeader(
 				Trigger:   "axis",
 				Formatter: "{b} <br />{a} : {c}",
 			}),
+			charts.WithInitializationOpts(opts.Initialization{
+				Width:  "1280px",
+				Height: "720px",
+			}),
 		)...,
 	)
 }
@@ -114,6 +118,10 @@ func createPieHeader(
 				Show:      true,
 				Trigger:   "item",
 				Formatter: "{a} <br/>{b} : {c} ({d}%)",
+			}),
+			charts.WithInitializationOpts(opts.Initialization{
+				Width:  "1280px",
+				Height: "720px",
 			}),
 		)...,
 	)

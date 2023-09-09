@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/christian-gama/productivity/pkg/gitlog"
 )
@@ -18,38 +19,60 @@ func Generate(config *Config) {
 
 func processDir(config *Config) []*gitlog.Log {
 	var logs []*gitlog.Log
-	var rawLogs []string
 
-	err := filepath.WalkDir(
-		config.Dir,
-		func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				if strings.Contains(err.Error(), "permission denied") {
-					return nil
-				}
+	// Define a channel to collect logs from the goroutines
+	results := make(chan []*gitlog.Log, len(config.Dir))
 
-				return err
-			}
+	// Define a wait group to wait for all goroutines to finish
+	var wg sync.WaitGroup
 
-			if d.IsDir() && d.Name() == ".git" {
-				fmt.Printf("Processing %s\n", strings.TrimSuffix(path, "/.git"))
-				rawLogs = gitlog.GetLog(filepath.Dir(path), &gitlog.Config{
-					Exclude: config.Exclude,
-				})
+	for _, dir := range config.Dir {
+		err := filepath.WalkDir(
+			dir,
+			func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
+					if strings.Contains(err.Error(), "permission denied") {
+						return nil
+					}
+
 					return err
 				}
 
-				logs = append(logs, gitlog.Parse(rawLogs)...)
+				if d.IsDir() && d.Name() == ".git" {
+					wg.Add(1) // Increment the wait group counter
 
-				return filepath.SkipDir
-			}
+					go func(path string) { // Start a goroutine
+						defer wg.Done()
 
-			return nil
-		},
-	)
-	if err != nil {
-		panic(fmt.Sprintf("Walking the directory tree failed: %s\n", err))
+						var localLogs []*gitlog.Log
+						fmt.Printf("Processing %s\n", strings.TrimSuffix(path, "/.git"))
+						rawLogs := gitlog.GetLog(filepath.Dir(path), &gitlog.Config{
+							Exclude: config.Exclude,
+						})
+
+						localLogs = append(localLogs, gitlog.Parse(rawLogs)...)
+
+						results <- localLogs // Send the results to the channel
+					}(path)
+
+					return filepath.SkipDir
+				}
+
+				return nil
+			},
+		)
+		if err != nil {
+			panic(fmt.Sprintf("Walking the directory tree failed: %s\n", err))
+		}
+	}
+
+	go func() { // Start another goroutine to close the results channel after all goroutines are done
+		wg.Wait()
+		close(results)
+	}()
+
+	for localLogs := range results {
+		logs = append(logs, localLogs...) // Aggregate results from the channel
 	}
 
 	return logs

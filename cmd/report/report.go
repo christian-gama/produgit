@@ -7,7 +7,7 @@ import (
 
 var (
 	authors []string
-	dir     string
+	dir     []string
 	output  string
 	exclude []string
 )
@@ -38,7 +38,7 @@ var ReportCmd = &cobra.Command{
 func init() {
 	ReportCmd.
 		Flags().
-		StringVarP(&dir, "dir", "d", "", "The starting directory to search for .git repositories")
+		StringArrayVarP(&dir, "dir", "d", []string{}, "The starting directory to search for .git repositories")
 
 	ReportCmd.
 		Flags().

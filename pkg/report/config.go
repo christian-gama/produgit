@@ -6,19 +6,19 @@ import (
 )
 
 type Config struct {
-	Dir     string
+	Dir     []string
 	Authors []string
 	Output  string
 	Exclude []string
 }
 
-func NewConfig(dir string, authors []string, output string, exclude []string) *Config {
-	if dir == "" {
-		dir = "."
+func NewConfig(dir []string, authors []string, output string, exclude []string) *Config {
+	if len(dir) == 0 {
+		dir = []string{"."}
 	}
 
 	if output == "" {
-		output = filepath.Join(dir, "produgit_report.json")
+		output = filepath.Join(".", "report")
 	} else if filepath.Ext(output) != ".json" {
 		output = fmt.Sprintf("%s.json", output)
 	}
