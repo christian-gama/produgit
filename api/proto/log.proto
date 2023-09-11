@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package data;
+
+option go_package = "github.com/christian-gama/produgit/internal/data;data";
+
+import "google/protobuf/timestamp.proto";
+
+message Log {
+    google.protobuf.Timestamp date = 1;
+    int32 plus = 2;
+    int32 minus = 3;
+    int32 diff = 4;
+    string path = 5;
+    string author = 6;
+}

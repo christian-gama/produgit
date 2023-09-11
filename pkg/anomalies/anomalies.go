@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/christian-gama/productivity/pkg/gitlog"
-	"github.com/christian-gama/productivity/pkg/report"
+	"github.com/christian-gama/produgit/pkg/gitlog"
+	"github.com/christian-gama/produgit/pkg/report"
 )
 
 func filterByDate(logs []*gitlog.Log, start, end time.Time) []*gitlog.Log {

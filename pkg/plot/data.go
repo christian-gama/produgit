@@ -1,6 +1,6 @@
 package plot
 
-import "github.com/christian-gama/productivity/pkg/gitlog"
+import "github.com/christian-gama/produgit/pkg/gitlog"
 
 type Data struct {
 	Author   string

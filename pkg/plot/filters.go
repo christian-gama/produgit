@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/christian-gama/productivity/pkg/gitlog"
+	"github.com/christian-gama/produgit/pkg/gitlog"
 )
 
 type FilterConfig struct {

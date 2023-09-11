@@ -1,8 +1,8 @@
 package plot
 
 import (
-	"github.com/christian-gama/productivity/pkg/plot"
-	"github.com/christian-gama/productivity/pkg/utils/date"
+	"github.com/christian-gama/produgit/pkg/plot"
+	"github.com/christian-gama/produgit/pkg/utils/date"
 	"github.com/spf13/cobra"
 )
 

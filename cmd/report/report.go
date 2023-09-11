@@ -1,7 +1,7 @@
 package report
 
 import (
-	"github.com/christian-gama/productivity/pkg/report"
+	"github.com/christian-gama/produgit/pkg/report"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +14,7 @@ var (
 
 var ReportCmd = &cobra.Command{
 	Use:   "report",
-	Short: "Generate a report of your productivity using a specialized git log",
+	Short: "Generate a report of your produgit using a specialized git log",
 	ValidArgs: []string{
 		"--dir",
 		"--output",

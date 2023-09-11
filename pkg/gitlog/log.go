@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/christian-gama/productivity/pkg/cmd"
+	"github.com/christian-gama/produgit/pkg/cmd"
 )
 
 type Config struct {

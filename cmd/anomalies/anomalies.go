@@ -1,8 +1,8 @@
 package anomalies
 
 import (
-	"github.com/christian-gama/productivity/pkg/anomalies"
-	"github.com/christian-gama/productivity/pkg/utils/date"
+	"github.com/christian-gama/produgit/pkg/anomalies"
+	"github.com/christian-gama/produgit/pkg/utils/date"
 	"github.com/spf13/cobra"
 )
 

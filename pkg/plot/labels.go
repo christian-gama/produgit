@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/christian-gama/productivity/pkg/gitlog"
+	"github.com/christian-gama/produgit/pkg/gitlog"
 )
 
 func createLanguageLabel(logs map[string][]*Data) []string {

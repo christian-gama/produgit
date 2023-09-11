@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/christian-gama/productivity/pkg/gitlog"
+	"github.com/christian-gama/produgit/pkg/gitlog"
 )
 
 func Generate(config *Config) {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/christian-gama/productivity/pkg/gitlog"
+	"github.com/christian-gama/produgit/pkg/gitlog"
 )
 
 func Read(reportPath string) []*gitlog.Log {
