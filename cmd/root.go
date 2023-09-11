@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/christian-gama/produgit/cmd/anomalies"
+	"github.com/christian-gama/produgit/cmd/config"
 	"github.com/christian-gama/produgit/cmd/plot"
 	"github.com/christian-gama/produgit/cmd/report"
 	"github.com/spf13/cobra"
@@ -16,6 +17,7 @@ func init() {
 	rootCmd.AddCommand(plot.PlotCmd)
 	rootCmd.AddCommand(report.ReportCmd)
 	rootCmd.AddCommand(anomalies.AnomaliesCmd)
+	rootCmd.AddCommand(config.ConfigCmd)
 }
 
 func main() {

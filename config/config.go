@@ -25,6 +25,15 @@ func DefaultConfigPath() (string, error) {
 	return path.Join(configPath, "config.toml"), nil
 }
 
+// DefaultOutputPath returns the default path for the output file.
+func DefaultOutputPath() (string, error) {
+	configPath, err := DefaultPath()
+	if err != nil {
+		return "", err
+	}
+	return path.Join(configPath, "report.pb"), nil
+}
+
 // Report is the configuration for the report command.
 type Report struct {
 	Exclude []string `toml:"exclude"`
@@ -44,8 +53,13 @@ type Config struct {
 }
 
 // New creates a new Config with default values.
-func New() *Config {
-	return &Config{
+func New() (*Config, error) {
+	defaultOutputPath, err := DefaultOutputPath()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := &Config{
 		Report: &Report{
 			Exclude: []string{
 				"**node_modules/*",
@@ -101,13 +115,15 @@ func New() *Config {
 				"*.ear",
 				"*.sqlite3",
 			},
-			Output: "produgit_report.json",
+			Output: defaultOutputPath,
 		},
 		Plot: &Plot{
 			Output:  "<chart>_<authors>_<date>.html",
 			Authors: []string{},
 		},
 	}
+
+	return cfg, nil
 }
 
 // Load loads a config file from the given path.
@@ -115,6 +131,12 @@ func Load() (*Config, error) {
 	defaultPath, err := DefaultConfigPath()
 	if err != nil {
 		return nil, err
+	}
+
+	if !Exists() {
+		if err := Reset(); err != nil {
+			return nil, err
+		}
 	}
 
 	file, err := os.Open(defaultPath)
@@ -131,20 +153,33 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
-// Rebuild creates a new default config file.
-func Rebuild() error {
-	defaultPath, err := DefaultConfigPath()
+// Reset creates a new default config file.
+func Reset() error {
+	if err := Remove(); err != nil {
+		return err
+	}
+
+	defaultConfigPath, err := DefaultConfigPath()
 	if err != nil {
 		return err
 	}
 
-	f, err := os.Create(defaultPath)
+	if err := os.MkdirAll(path.Dir(defaultConfigPath), 0755); err != nil {
+		return err
+	}
+
+	f, err := os.Create(defaultConfigPath)
 	if err != nil {
 		return nil
 	}
 	defer f.Close()
 
-	return toml.NewEncoder(f).Encode(New())
+	cfg, err := New()
+	if err != nil {
+		return err
+	}
+
+	return toml.NewEncoder(f).Encode(cfg)
 }
 
 // Exists returns true if the default config file exists.
@@ -155,4 +190,18 @@ func Exists() bool {
 	}
 	_, err = os.Stat(defaultPath)
 	return !os.IsNotExist(err)
+}
+
+// Remove removes the default config file.
+func Remove() error {
+	if !Exists() {
+		return nil
+	}
+
+	defaultPath, err := DefaultConfigPath()
+	if err != nil {
+		return err
+	}
+
+	return os.Remove(defaultPath)
 }

@@ -1,7 +1,0 @@
-[report]
-exclude = ["example1", "example2"]
-output = "report_output.txt"
-
-[plot]
-output = "plot_output.png"
-authors = ["Alice", "Bob"]

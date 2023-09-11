@@ -1,12 +1,12 @@
 package report
 
 import (
-	"github.com/christian-gama/produgit/pkg/report"
+	"github.com/christian-gama/produgit/config"
+	"github.com/christian-gama/produgit/internal/report"
 	"github.com/spf13/cobra"
 )
 
 var (
-	authors []string
 	dir     []string
 	output  string
 	exclude []string
@@ -17,34 +17,33 @@ var ReportCmd = &cobra.Command{
 	Short: "Generate a report of your produgit using a specialized git log",
 	ValidArgs: []string{
 		"--dir",
-		"--output",
-		"--exclude",
 		"-d",
+		"--output",
 		"-o",
+		"--exclude",
 		"-e",
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		report.Generate(
-			report.NewConfig(
-				dir,
-				authors,
-				output,
-				exclude,
-			),
-		)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		report := report.NewReport(dir, exclude, output)
+		return report.Generate()
 	},
 }
 
 func init() {
-	ReportCmd.
-		Flags().
-		StringArrayVarP(&dir, "dir", "d", []string{}, "The starting directory to search for .git repositories")
+	config, err := config.Load()
+	if err != nil {
+		panic(err)
+	}
 
 	ReportCmd.
 		Flags().
-		StringVarP(&output, "output", "o", "", "The output path for the report")
+		StringArrayVarP(&dir, "dir", "d", []string{"."}, "The starting directory to search for .git repositories")
 
 	ReportCmd.
 		Flags().
-		StringArrayVarP(&exclude, "exclude", "e", []string{}, "The directories to exclude from the report")
+		StringVarP(&output, "output", "o", config.Report.Output, "The output path for the report")
+
+	ReportCmd.
+		Flags().
+		StringArrayVarP(&exclude, "exclude", "e", config.Report.Exclude, "The directories to exclude from the report")
 }

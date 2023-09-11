@@ -14,3 +14,7 @@ message Log {
     string path = 5;
     string author = 6;
 }
+
+message Logs {
+    repeated Log logs = 1;
+}
