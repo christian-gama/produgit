@@ -27,8 +27,8 @@ func NewConfig(
 		return nil, fmt.Errorf("At least one author must be provided")
 	}
 
-	if len(authors) > 3 {
-		return nil, fmt.Errorf("Only up to 3 authors are supported")
+	if len(authors) > 5 {
+		return nil, fmt.Errorf("Only up to 5 authors are supported")
 	}
 
 	for _, author := range authors {

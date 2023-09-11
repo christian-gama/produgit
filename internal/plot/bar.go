@@ -36,7 +36,7 @@ func (b *bar) generateData(
 	var result []opts.BarData
 
 	for _, label := range labels {
-		authorData, ok := data[date(label)][author]
+		authorData, ok := data[label][author]
 		if ok {
 			result = append(result, opts.BarData{Value: authorData})
 		} else {
@@ -56,7 +56,7 @@ func (b *bar) generateSeries(
 		found := false
 
 		for _, label := range labels {
-			if _, ok := data[date(label)][author]; ok {
+			if _, ok := data[label][author]; ok {
 				found = true
 				break
 			}
@@ -68,4 +68,18 @@ func (b *bar) generateSeries(
 			b.renderer.AddSeries(author, []opts.BarData{})
 		}
 	}
+}
+
+// setGlobalOptions sets the global options for the bar chart.
+func (b *bar) setGlobalOptions(title string) {
+	b.renderer.SetGlobalOptions(
+		append(
+			b.defaultGlobalOpts(title),
+			charts.WithTooltipOpts(opts.Tooltip{
+				Show:      true,
+				Trigger:   "axis",
+				Formatter: "{b} <br />{a} : {c}",
+			}),
+		)...,
+	)
 }

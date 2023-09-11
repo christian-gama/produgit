@@ -15,9 +15,8 @@ import (
 
 // dataMap is a map with date as key and value as a map of any string as key to int32 as value.
 type (
-	date         string
 	dataValueMap map[string]int32
-	dataMap      map[date]dataValueMap
+	dataMap      map[string]dataValueMap
 )
 
 // chart holds the configuration for a plot.
@@ -123,26 +122,31 @@ func (p *chart[T]) defaultGlobalOpts(
 		globalOpts,
 		charts.WithTitleOpts(opts.Title{Title: title, Subtitle: subtitle}),
 		charts.WithInitializationOpts(
-			opts.Initialization{Width: "1280px", Height: "720px", PageTitle: fmt.Sprintf("%s - %s", title, subtitle)},
+			opts.Initialization{
+				Width:     "1280px",
+				Height:    "720px",
+				PageTitle: fmt.Sprintf("%s - %s", title, subtitle),
+			},
 		),
 	)
 }
 
 // generateDataMap generates a map of data from a list of logs.
 func (p *chart[T]) generateDataMap(
-	filter func(l *data.Log) dataValueMap,
+	createKey func(c *chart[T], l *data.Log) string,
+	createData func(c *chart[T], l *data.Log) dataValueMap,
 ) dataMap {
 	accumulatedLogs := make(dataMap)
 
 	for _, log := range p.logs.Logs {
-		dateKey := log.Date.AsTime().Format(p.dateFmt)
+		rootKey := createKey(p, log)
 
-		if _, ok := accumulatedLogs[date(dateKey)]; !ok {
-			accumulatedLogs[date(dateKey)] = make(dataValueMap)
+		if _, ok := accumulatedLogs[rootKey]; !ok {
+			accumulatedLogs[rootKey] = make(dataValueMap)
 		}
 
-		for key, value := range filter(log) {
-			accumulatedLogs[date(dateKey)][key] += value
+		for key, value := range createData(p, log) {
+			accumulatedLogs[rootKey][key] += value
 		}
 	}
 

@@ -67,6 +67,9 @@ var (
 
 func Init() {
 	PlotCmd.AddCommand(monthlyCmd)
+	PlotCmd.AddCommand(timeOfDayCmd)
+	PlotCmd.AddCommand(topLanguagesCmd)
+	PlotCmd.AddCommand(weekdayCmd)
 
 	PlotCmd.
 		PersistentFlags().
