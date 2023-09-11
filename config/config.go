@@ -7,6 +7,9 @@ import (
 	"github.com/pelletier/go-toml"
 )
 
+// Config is the global configuration.
+var Config *config
+
 // DefaultPath returns the default path for the config file.
 func DefaultPath() (string, error) {
 	homedir, err := os.UserHomeDir()
@@ -34,33 +37,39 @@ func DefaultOutputPath() (string, error) {
 	return path.Join(configPath, "report.pb"), nil
 }
 
-// Report is the configuration for the report command.
-type Report struct {
+// DefaultPlotOutputPath returns the default path for the plot output file.
+func DefaultPlotOutputPath() string {
+	return "<chart>_<authors>_<date>.html"
+}
+
+// report is the configuration for the report command.
+type report struct {
 	Exclude []string `toml:"exclude"`
 	Output  string   `toml:"output"`
 }
 
-// Plot is the configuration for the plot command.
-type Plot struct {
+// plot is the configuration for the plot command.
+type plot struct {
 	Output  string   `toml:"output"`
 	Authors []string `toml:"authors"`
 }
 
-// Config is the configuration for the produgit command.
-type Config struct {
-	Report *Report `toml:"report"`
-	Plot   *Plot   `toml:"plot"`
+// config is the configuration for the produgit command.
+type config struct {
+	Report *report `toml:"report"`
+	Plot   *plot   `toml:"plot"`
+	Quiet  bool    `toml:"quiet"`
 }
 
 // New creates a new Config with default values.
-func New() (*Config, error) {
+func New() (*config, error) {
 	defaultOutputPath, err := DefaultOutputPath()
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := &Config{
-		Report: &Report{
+	cfg := &config{
+		Report: &report{
 			Exclude: []string{
 				"**node_modules/*",
 				"**vendor/*",
@@ -117,40 +126,43 @@ func New() (*Config, error) {
 			},
 			Output: defaultOutputPath,
 		},
-		Plot: &Plot{
-			Output:  "<chart>_<authors>_<date>.html",
+		Plot: &plot{
+			Output:  DefaultPlotOutputPath(),
 			Authors: []string{},
 		},
+		Quiet: false,
 	}
 
 	return cfg, nil
 }
 
 // Load loads a config file from the given path.
-func Load() (*Config, error) {
+func Load() error {
 	defaultPath, err := DefaultConfigPath()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !Exists() {
 		if err := Reset(); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	file, err := os.Open(defaultPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
-	config := &Config{}
+	config := &config{}
 	if err := toml.NewDecoder(file).Decode(config); err != nil {
-		return nil, err
+		return err
 	}
 
-	return config, nil
+	Config = config
+
+	return nil
 }
 
 // Reset creates a new default config file.

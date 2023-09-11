@@ -13,7 +13,7 @@ var ConfigCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func Init() {
 	ConfigCmd.AddCommand(editCmd)
 	ConfigCmd.AddCommand(resetCmd)
 }

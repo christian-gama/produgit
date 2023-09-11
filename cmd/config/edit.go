@@ -30,8 +30,10 @@ var editCmd = &cobra.Command{
 			return fmt.Errorf("Failed to get config path: %v", err)
 		}
 
-		if _, err := cmdutil.Run(editor, configPath); err != nil {
+		if cmd, err := cmdutil.Run(editor, configPath); err != nil {
 			return fmt.Errorf("Failed to run editor: %v", err)
+		} else if err := cmd.Wait(); err != nil {
+			return fmt.Errorf("Failed to wait for editor: %v", err)
 		}
 
 		return nil

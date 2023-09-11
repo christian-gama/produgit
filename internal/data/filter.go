@@ -13,15 +13,15 @@ import (
 type FilterOption func(logs []*Log) ([]*Log, error)
 
 // Filter filters the logs.
-func Filter(logs []*Log, options ...FilterOption) (result []*Log, err error) {
-	result = make([]*Log, 0, len(logs))
+func Filter(logs *Logs, options ...FilterOption) (result *Logs, err error) {
+	result = &Logs{Logs: make([]*Log, 0)}
 
 	for _, option := range options {
-		tempResults, err := option(logs)
+		tempResults, err := option(logs.Logs)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, tempResults...)
+		result.Logs = append(result.Logs, tempResults...)
 	}
 
 	return result, nil

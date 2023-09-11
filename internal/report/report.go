@@ -2,7 +2,6 @@ package report
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/christian-gama/produgit/internal/data"
 	"github.com/christian-gama/produgit/internal/git"
+	"github.com/christian-gama/produgit/internal/logger"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -44,61 +44,49 @@ func (r *Report) Generate() error {
 	return nil
 }
 
-// processDir processes the directories.
+// processGitDir processes a .git directory to fetch and parse logs.
+func (r *Report) processGitDir(
+	path string,
+	results chan []*data.Log,
+	errs chan error,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+	logger.Print("Processing %s", strings.TrimSuffix(path, "/.git"))
+
+	var localLogs []*data.Log
+
+	rawLogs, err := git.GetLog(filepath.Dir(path), r.Exclude)
+	if err != nil {
+		errs <- fmt.Errorf("Getting logs failed: %w", err)
+		return
+	}
+
+	parsedLogs, err := data.Parse(rawLogs)
+	if err != nil {
+		errs <- fmt.Errorf("Parsing logs failed: %w", err)
+		return
+	}
+
+	localLogs = append(localLogs, parsedLogs...)
+	results <- localLogs
+}
+
 func (r *Report) processDir() ([]*data.Log, error) {
 	var logs []*data.Log
-
 	results := make(chan []*data.Log, len(r.Dir))
 	errs := make(chan error, len(r.Dir))
-
 	var wg sync.WaitGroup
 
-	for _, dir := range r.Dir {
-		err := filepath.WalkDir(
-			dir,
-			func(path string, d fs.DirEntry, err error) error {
-				if err != nil {
-					if strings.Contains(err.Error(), "permission denied") {
-						return nil
-					}
+	callback := func(path string) error {
+		wg.Add(1)
+		go r.processGitDir(path, results, errs, &wg)
+		return nil
+	}
 
-					return err
-				}
-
-				if d.IsDir() && d.Name() == ".git" {
-					wg.Add(1)
-
-					go func(path string) {
-						defer wg.Done()
-
-						var localLogs []*data.Log
-						fmt.Printf("Processing %s\n", strings.TrimSuffix(path, "/.git"))
-						rawLogs, err := git.GetLog(filepath.Dir(path), r.Exclude)
-						if err != nil {
-							errs <- fmt.Errorf("Getting logs failed: %w", err)
-							return
-						}
-
-						parsedLogs, err := data.Parse(rawLogs)
-						if err != nil {
-							errs <- fmt.Errorf("Parsing logs failed: %w", err)
-							return
-						}
-
-						localLogs = append(localLogs, parsedLogs...)
-
-						results <- localLogs
-					}(path)
-
-					return filepath.SkipDir
-				}
-
-				return nil
-			},
-		)
-		if err != nil {
-			return nil, fmt.Errorf("Walking directory failed: %w", err)
-		}
+	err := git.WalkDirs(r.Dir, callback)
+	if err != nil {
+		return nil, err
 	}
 
 	go func() {

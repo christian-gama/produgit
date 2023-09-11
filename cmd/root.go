@@ -4,20 +4,32 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/christian-gama/produgit/cmd/anomalies"
 	"github.com/christian-gama/produgit/cmd/config"
+	"github.com/christian-gama/produgit/cmd/list"
 	"github.com/christian-gama/produgit/cmd/plot"
 	"github.com/christian-gama/produgit/cmd/report"
 	"github.com/spf13/cobra"
+
+	appconfig "github.com/christian-gama/produgit/config"
 )
 
 var rootCmd = &cobra.Command{Use: "produgit", Short: "A produgit tool for git"}
 
 func init() {
+	err := appconfig.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	plot.Init()
+	report.Init()
+	config.Init()
+	list.Init()
+
 	rootCmd.AddCommand(plot.PlotCmd)
 	rootCmd.AddCommand(report.ReportCmd)
-	rootCmd.AddCommand(anomalies.AnomaliesCmd)
 	rootCmd.AddCommand(config.ConfigCmd)
+	rootCmd.AddCommand(list.ListCmd)
 }
 
 func main() {
@@ -29,6 +41,6 @@ func main() {
 	}()
 
 	if err := rootCmd.Execute(); err != nil {
-		panic(fmt.Sprintf("Error: %s", err))
+		panic(err)
 	}
 }

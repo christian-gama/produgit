@@ -22,6 +22,8 @@ var ReportCmd = &cobra.Command{
 		"-o",
 		"--exclude",
 		"-e",
+		"--quiet",
+		"-q",
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		report := report.NewReport(dir, exclude, output)
@@ -29,21 +31,20 @@ var ReportCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	config, err := config.Load()
-	if err != nil {
-		panic(err)
-	}
-
+func Init() {
 	ReportCmd.
 		Flags().
 		StringArrayVarP(&dir, "dir", "d", []string{"."}, "The starting directory to search for .git repositories")
 
 	ReportCmd.
 		Flags().
-		StringVarP(&output, "output", "o", config.Report.Output, "The output path for the report")
+		StringVarP(&output, "output", "o", config.Config.Report.Output, "The output path for the report")
 
 	ReportCmd.
 		Flags().
-		StringArrayVarP(&exclude, "exclude", "e", config.Report.Exclude, "The directories to exclude from the report")
+		StringArrayVarP(&exclude, "exclude", "e", config.Config.Report.Exclude, "The directories to exclude from the report")
+
+	ReportCmd.
+		Flags().
+		BoolVarP(&config.Config.Quiet, "quiet", "q", config.Config.Quiet, "If true, the report will not be printed to stdout")
 }

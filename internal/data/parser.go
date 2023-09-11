@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/christian-gama/produgit/internal/logger"
 	dateutil "github.com/christian-gama/produgit/internal/util/date"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -16,6 +17,7 @@ var (
 	pathRegex    = regexp.MustCompile(`^\d+\t\d+\t(.*)`)
 )
 
+// Parse parses the logs.
 func Parse(rawLogs []string) ([]*Log, error) {
 	logs := make([]*Log, 0)
 	log := &Log{}
@@ -60,51 +62,27 @@ func Parse(rawLogs []string) ([]*Log, error) {
 
 		if matches := pathRegex.FindStringSubmatch(line); len(matches) == 2 {
 			log.Path = matches[1]
+
+			if log.Plus > 3_000 || log.Minus > 3_000 {
+				logger.Warn(
+					"Possibly found an anomaly: Plus: %d, Minus: %d, Path: %s, Author: %s",
+					log.Plus,
+					log.Minus,
+					log.Path,
+					log.Author,
+				)
+			}
+
 			logs = append(logs, log)
 			log = &Log{
 				Date:   log.Date,
 				Author: log.Author,
 			}
 		}
+
 	}
 
-	sort.Stable(LogSlice(logs))
+	sort.Stable(logSorter(logs))
 
 	return logs, nil
-}
-
-// LogSlice is a custom type to make sorting Logs easier.
-type LogSlice []*Log
-
-func (s LogSlice) Len() int {
-	return len(s)
-}
-
-func (s LogSlice) Less(i, j int) bool {
-	if s[i].Author < s[j].Author {
-		return true
-	} else if s[i].Author > s[j].Author {
-		return false
-	}
-
-	// If Author Emails are equal, compare by Date
-	if s[i].Date.AsTime().Before(s[j].Date.AsTime()) {
-		return true
-	} else if s[i].Date.AsTime().After(s[j].Date.AsTime()) {
-		return false
-	}
-
-	// If Dates are equal, compare by Path
-	if s[i].Path < s[j].Path {
-		return true
-	} else if s[i].Path > s[j].Path {
-		return false
-	}
-
-	// If Dates and Paths are equal, compare by Diff
-	return s[i].Diff < s[j].Diff
-}
-
-func (s LogSlice) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
 }

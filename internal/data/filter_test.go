@@ -16,14 +16,14 @@ func TestFilter_WithDate(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		logs     []*Log
+		logs     *Logs
 		args     args
 		expected []*Log
 		wantErr  bool
 	}{
 		{
 			name: "empty logs",
-			logs: []*Log{},
+			logs: &Logs{Logs: make([]*Log, 0)},
 			args: args{
 				startTime: time.Now().Add(-24 * time.Hour),
 				endTime:   time.Now(),
@@ -33,9 +33,11 @@ func TestFilter_WithDate(t *testing.T) {
 		},
 		{
 			name: "filter by date",
-			logs: []*Log{
-				{Date: timestamppb.New(time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC))},
-				{Date: timestamppb.New(time.Date(2020, 1, 2, 12, 0, 0, 0, time.UTC))},
+			logs: &Logs{
+				Logs: []*Log{
+					{Date: timestamppb.New(time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC))},
+					{Date: timestamppb.New(time.Date(2020, 1, 2, 12, 0, 0, 0, time.UTC))},
+				},
 			},
 			args: args{
 				startTime: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -49,9 +51,11 @@ func TestFilter_WithDate(t *testing.T) {
 		},
 		{
 			name: "filter by date with no logs",
-			logs: []*Log{
-				{Date: timestamppb.New(time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC))},
-				{Date: timestamppb.New(time.Date(2020, 1, 2, 12, 0, 0, 0, time.UTC))},
+			logs: &Logs{
+				Logs: []*Log{
+					{Date: timestamppb.New(time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC))},
+					{Date: timestamppb.New(time.Date(2020, 1, 2, 12, 0, 0, 0, time.UTC))},
+				},
 			},
 			args: args{
 				startTime: time.Date(2020, 1, 3, 0, 0, 0, 0, time.UTC),
@@ -69,12 +73,12 @@ func TestFilter_WithDate(t *testing.T) {
 				t.Errorf("Filter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) != len(tt.expected) {
+			if len(got.Logs) != len(tt.expected) {
 				t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				return
 			}
-			for i := range got {
-				if !reflect.DeepEqual(got[i], tt.expected[i]) {
+			for i := range got.Logs {
+				if !reflect.DeepEqual(got.Logs[i], tt.expected[i]) {
 					t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				}
 			}
@@ -85,17 +89,19 @@ func TestFilter_WithDate(t *testing.T) {
 func TestFilter_WithAuthors(t *testing.T) {
 	tests := []struct {
 		name     string
-		logs     []*Log
+		logs     *Logs
 		authors  []string
 		expected []*Log
 		wantErr  bool
 	}{
 		{
 			name: "match authors",
-			logs: []*Log{
-				{Author: "John"},
-				{Author: "Jane"},
-				{Author: "Doe"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "John"},
+					{Author: "Jane"},
+					{Author: "Doe"},
+				},
 			},
 			authors: []string{"John", "Jane"},
 			expected: []*Log{
@@ -106,9 +112,11 @@ func TestFilter_WithAuthors(t *testing.T) {
 		},
 		{
 			name: "case insensitive match",
-			logs: []*Log{
-				{Author: "john"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "john"},
+					{Author: "Jane"},
+				},
 			},
 			authors: []string{"JoHn"},
 			expected: []*Log{
@@ -118,9 +126,11 @@ func TestFilter_WithAuthors(t *testing.T) {
 		},
 		{
 			name: "no match",
-			logs: []*Log{
-				{Author: "john"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "john"},
+					{Author: "Jane"},
+				},
 			},
 			authors:  []string{"Alan"},
 			expected: nil,
@@ -128,10 +138,12 @@ func TestFilter_WithAuthors(t *testing.T) {
 		},
 		{
 			name: "regex match",
-			logs: []*Log{
-				{Author: "john"},
-				{Author: "johndoe"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "john"},
+					{Author: "johndoe"},
+					{Author: "Jane"},
+				},
 			},
 			authors: []string{"john.*"},
 			expected: []*Log{
@@ -142,9 +154,11 @@ func TestFilter_WithAuthors(t *testing.T) {
 		},
 		{
 			name: "invalid regex",
-			logs: []*Log{
-				{Author: "john"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "john"},
+					{Author: "Jane"},
+				},
 			},
 			authors:  []string{"john("},
 			expected: nil,
@@ -159,12 +173,12 @@ func TestFilter_WithAuthors(t *testing.T) {
 				t.Errorf("Filter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) != len(tt.expected) {
+			if len(got.Logs) != len(tt.expected) {
 				t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				return
 			}
-			for i := range got {
-				if got[i].Author != tt.expected[i].Author {
+			for i := range got.Logs {
+				if got.Logs[i].Author != tt.expected[i].Author {
 					t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				}
 			}
@@ -175,17 +189,19 @@ func TestFilter_WithAuthors(t *testing.T) {
 func TestFilter_WithMergeAuthors(t *testing.T) {
 	tests := []struct {
 		name     string
-		logs     []*Log
+		logs     *Logs
 		authors  []string
 		expected []*Log
 		wantErr  bool
 	}{
 		{
 			name: "merge authors",
-			logs: []*Log{
-				{Author: "John"},
-				{Author: "John Doe"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "John"},
+					{Author: "John Doe"},
+					{Author: "Jane"},
+				},
 			},
 			authors: []string{"John"},
 			expected: []*Log{
@@ -197,10 +213,12 @@ func TestFilter_WithMergeAuthors(t *testing.T) {
 		},
 		{
 			name: "case insensitive merge",
-			logs: []*Log{
-				{Author: "john"},
-				{Author: "JoHn Doe"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "john"},
+					{Author: "JoHn Doe"},
+					{Author: "Jane"},
+				},
 			},
 			authors: []string{"jOhN"},
 			expected: []*Log{
@@ -212,9 +230,11 @@ func TestFilter_WithMergeAuthors(t *testing.T) {
 		},
 		{
 			name: "no merge",
-			logs: []*Log{
-				{Author: "john"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "john"},
+					{Author: "Jane"},
+				},
 			},
 			authors: []string{"Alan"},
 			expected: []*Log{
@@ -225,10 +245,12 @@ func TestFilter_WithMergeAuthors(t *testing.T) {
 		},
 		{
 			name: "multiple author merge",
-			logs: []*Log{
-				{Author: "john"},
-				{Author: "johndoe"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "john"},
+					{Author: "johndoe"},
+					{Author: "Jane"},
+				},
 			},
 			authors: []string{"john", "Jane"},
 			expected: []*Log{
@@ -240,9 +262,11 @@ func TestFilter_WithMergeAuthors(t *testing.T) {
 		},
 		{
 			name: "invalid regex",
-			logs: []*Log{
-				{Author: "john"},
-				{Author: "Jane"},
+			logs: &Logs{
+				Logs: []*Log{
+					{Author: "john"},
+					{Author: "Jane"},
+				},
 			},
 			authors:  []string{"john("},
 			expected: nil,
@@ -257,12 +281,12 @@ func TestFilter_WithMergeAuthors(t *testing.T) {
 				t.Errorf("Filter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) != len(tt.expected) {
+			if len(got.Logs) != len(tt.expected) {
 				t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				return
 			}
-			for i := range got {
-				if got[i].Author != tt.expected[i].Author {
+			for i := range got.Logs {
+				if got.Logs[i].Author != tt.expected[i].Author {
 					t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				}
 			}
