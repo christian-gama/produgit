@@ -13,8 +13,8 @@ import (
 type FilterOption func(logs []*Log) ([]*Log, error)
 
 // Filter filters the logs.
-func Filter(logs *Logs, options ...FilterOption) (result *Logs, err error) {
-	result = &Logs{Logs: make([]*Log, 0)}
+func Filter(logs *Logs, options ...FilterOption) (*Logs, error) {
+	result := &Logs{Logs: make([]*Log, 0)}
 
 	for _, option := range options {
 		tempResults, err := option(logs.Logs)
@@ -41,7 +41,7 @@ func WithDate(startTime, endTime time.Time) FilterOption {
 		}
 
 		for _, log := range logs {
-			logTime := log.Date.AsTime()
+			logTime := log.GetDate().AsTime()
 
 			if logTime.After(startTime) && logTime.Before(endTime) {
 				filteredLogs = append(filteredLogs, log)
@@ -72,7 +72,7 @@ func WithAuthors(authors []string) FilterOption {
 			}
 
 			for _, log := range logs {
-				if r.MatchString(log.Author) {
+				if r.MatchString(log.GetAuthor()) {
 					filteredLogs = append(filteredLogs, log)
 				}
 			}
@@ -100,7 +100,7 @@ func WithMergeAuthors(authors []string) FilterOption {
 		}
 
 		for _, log := range logs {
-			matches := r.FindStringSubmatch(log.Author)
+			matches := r.FindStringSubmatch(log.GetAuthor())
 			if len(matches) > 0 {
 				newLog := log
 				for _, author := range authors {

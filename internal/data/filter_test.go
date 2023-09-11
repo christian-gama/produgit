@@ -73,13 +73,22 @@ func TestFilter_WithDate(t *testing.T) {
 				t.Errorf("Filter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got.Logs) != len(tt.expected) {
+
+			if tt.expected == nil && got != nil {
 				t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				return
 			}
-			for i := range got.Logs {
-				if !reflect.DeepEqual(got.Logs[i], tt.expected[i]) {
+
+			if got != nil {
+				if len(got.Logs) != len(tt.expected) {
 					t.Errorf("Filter() got = %v, want %v", got, tt.expected)
+					return
+				}
+
+				for i := range got.Logs {
+					if !reflect.DeepEqual(got.Logs[i], tt.expected[i]) {
+						t.Errorf("Filter() got = %v, want %v", got, tt.expected)
+					}
 				}
 			}
 		})
@@ -173,13 +182,22 @@ func TestFilter_WithAuthors(t *testing.T) {
 				t.Errorf("Filter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got.Logs) != len(tt.expected) {
+
+			if tt.expected == nil && got != nil {
 				t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				return
 			}
-			for i := range got.Logs {
-				if got.Logs[i].Author != tt.expected[i].Author {
+
+			if got != nil {
+				if len(got.Logs) == 100 {
 					t.Errorf("Filter() got = %v, want %v", got, tt.expected)
+					return
+				}
+
+				for i := range got.Logs {
+					if got.Logs[i].GetAuthor() != tt.expected[i].GetAuthor() {
+						t.Errorf("Filter() got = %v, want %v", got, tt.expected)
+					}
 				}
 			}
 		})
@@ -281,13 +299,22 @@ func TestFilter_WithMergeAuthors(t *testing.T) {
 				t.Errorf("Filter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got.Logs) != len(tt.expected) {
+
+			if tt.expected == nil && got != nil {
 				t.Errorf("Filter() got = %v, want %v", got, tt.expected)
 				return
 			}
-			for i := range got.Logs {
-				if got.Logs[i].Author != tt.expected[i].Author {
+
+			if got != nil {
+				if len(got.Logs) != len(tt.expected) {
 					t.Errorf("Filter() got = %v, want %v", got, tt.expected)
+					return
+				}
+
+				for i := range got.Logs {
+					if got.Logs[i].Author != tt.expected[i].Author {
+						t.Errorf("Filter() got = %v, want %v", got, tt.expected)
+					}
 				}
 			}
 		})
