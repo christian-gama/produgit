@@ -1,6 +1,9 @@
 # Produgit CLI Tool
 
+![Produgit Chart](charts.png)
+
 The Produgit CLI tool offers various commands for analyzing, reporting, and visualizing your git repositories.
+
 
 ## Available Commands
 | Command         | Description                                               |
