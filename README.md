@@ -8,7 +8,9 @@ The Produgit CLI tool offers various commands for analyzing, reporting, and visu
 - [Go](https://golang.org/): You will need Go installed to build and run this tool. You can download it from the [official Go website](https://golang.org/dl/).
 
 ## Install
-`go install github.com/christian-gama/produgit@latest`
+```sh
+go install github.com/christian-gama/produgit@latest
+```
 
 
 ## Available Commands
@@ -31,7 +33,7 @@ The Produgit CLI tool offers various commands for analyzing, reporting, and visu
 | `--quiet`       | `-q`  |               | Quiet mode. Suppresses output. |
 
 Example:
-```
+```sh
 produgit --dir "~/personal" --dir "~/work" --exclude "**path/to/ignore/*" --exclude "*.extension"
 ```
 
@@ -55,7 +57,7 @@ Subcommands within `plot`:
 - `weekday`: Plot the weekday data.
 
 Example:
-```
+```sh
 produgit plot monthly --author "Foo" --author "Bar" -s 2023-09-12 14:15
 ```
 
@@ -79,7 +81,7 @@ produgit plot monthly --author "Foo" --author "Bar" -s 2023-09-12 14:15
 | `--authors`     | `-a`  | (from config) | Authors to be considered. |
 
 Example:
-```
+```sh
 produgit anomaly -q 5000 -s "2023-01-01" -e "
 
 2023-12-31"
@@ -99,7 +101,7 @@ Commands within `list`:
 ---
 
 To get a detailed help message for each command, use:
-```
+```sh
 produgit [command] --help
 ```
 
@@ -119,7 +121,7 @@ output = "<chart>_<authors>_<date>.html"
 [report]
 exclude = [
     "**node_modules/*",
-    ...many others,
+    # other paths
 ]
 output = "path/to/your/report.pb"
 ```
