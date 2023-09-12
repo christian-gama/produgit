@@ -82,9 +82,7 @@ produgit plot monthly --author "Foo" --author "Bar" -s 2023-09-12 14:15
 
 Example:
 ```sh
-produgit anomaly -q 5000 -s "2023-01-01" -e "
-
-2023-12-31"
+produgit anomaly -q 5000 -s "2023-01-01" -e "2023-12-31"
 ```
 
 ### List
