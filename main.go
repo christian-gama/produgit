@@ -14,7 +14,10 @@ import (
 	appconfig "github.com/christian-gama/produgit/config"
 )
 
-var rootCmd = &cobra.Command{Use: "produgit", Short: "A produgit tool for git"}
+var rootCmd = &cobra.Command{
+	Use:   "produgit",
+	Short: "A tool to help you understand your git repositories",
+}
 
 func init() {
 	err := appconfig.Load()
