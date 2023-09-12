@@ -4,6 +4,9 @@
 
 The Produgit CLI tool offers various commands for analyzing, reporting, and visualizing your git repositories.
 
+## Requirements
+- [Go](https://golang.org/): You will need Go installed to build and run this tool. You can download it from the [official Go website](https://golang.org/dl/).
+
 
 ## Available Commands
 | Command         | Description                                               |
