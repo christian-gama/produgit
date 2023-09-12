@@ -20,6 +20,7 @@ var ListCmd = &cobra.Command{
 
 func Init() {
 	ListCmd.AddCommand(authorCmd)
+	ListCmd.AddCommand(reposCmd)
 
 	ListCmd.
 		PersistentFlags().

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/christian-gama/produgit/cmd/anomaly"
 	"github.com/christian-gama/produgit/cmd/config"
 	"github.com/christian-gama/produgit/cmd/list"
 	"github.com/christian-gama/produgit/cmd/plot"
@@ -25,11 +26,13 @@ func init() {
 	report.Init()
 	config.Init()
 	list.Init()
+	anomaly.Init()
 
 	rootCmd.AddCommand(plot.PlotCmd)
 	rootCmd.AddCommand(report.ReportCmd)
 	rootCmd.AddCommand(config.ConfigCmd)
 	rootCmd.AddCommand(list.ListCmd)
+	rootCmd.AddCommand(anomaly.AnomalyCmd)
 }
 
 func main() {

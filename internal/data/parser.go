@@ -65,7 +65,7 @@ func Parse(rawLogs []string) ([]*Log, error) {
 
 			if log.Plus > 3_000 || log.Minus > 3_000 {
 				logger.Warn(
-					"Possibly found an anomaly: Plus: %d, Minus: %d, Path: %s, Author: %s",
+					"Possibly found an anomaly - if so, it would be wise to add the path to 'excluded': Plus: %d, Minus: %d, Path: %s, Author: %s",
 					log.Plus,
 					log.Minus,
 					log.Path,

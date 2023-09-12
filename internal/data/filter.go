@@ -16,12 +16,20 @@ type FilterOption func(logs []*Log) ([]*Log, error)
 func Filter(logs *Logs, options ...FilterOption) (*Logs, error) {
 	result := &Logs{Logs: make([]*Log, 0)}
 
+	currentLogs := logs.Logs
 	for _, option := range options {
-		tempResults, err := option(logs.Logs)
+		tempResults, err := option(currentLogs)
 		if err != nil {
 			return nil, err
 		}
-		result.Logs = append(result.Logs, tempResults...)
+
+		if len(result.Logs) == 0 {
+			result.Logs = append(result.Logs, tempResults...)
+		} else {
+			result.Logs = tempResults
+		}
+
+		currentLogs = result.Logs
 	}
 
 	return result, nil

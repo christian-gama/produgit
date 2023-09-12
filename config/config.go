@@ -50,15 +50,15 @@ type report struct {
 
 // plot is the configuration for the plot command.
 type plot struct {
-	Output  string   `toml:"output"`
-	Authors []string `toml:"authors"`
+	Output string `toml:"output"`
 }
 
 // config is the configuration for the produgit command.
 type config struct {
-	Report *report `toml:"report"`
-	Plot   *plot   `toml:"plot"`
-	Quiet  bool    `toml:"quiet"`
+	Report  *report  `toml:"report"`
+	Plot    *plot    `toml:"plot"`
+	Quiet   bool     `toml:"quiet"`
+	Authors []string `toml:"authors"`
 }
 
 // New creates a new Config with default values.
@@ -127,10 +127,10 @@ func New() (*config, error) {
 			Output: defaultOutputPath,
 		},
 		Plot: &plot{
-			Output:  DefaultPlotOutputPath(),
-			Authors: []string{},
+			Output: DefaultPlotOutputPath(),
 		},
-		Quiet: false,
+		Quiet:   false,
+		Authors: []string{},
 	}
 
 	return cfg, nil

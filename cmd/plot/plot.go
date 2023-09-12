@@ -69,6 +69,7 @@ func Init() {
 	PlotCmd.AddCommand(monthlyCmd)
 	PlotCmd.AddCommand(timeOfDayCmd)
 	PlotCmd.AddCommand(topLanguagesCmd)
+	PlotCmd.AddCommand(topAuthorsCmd)
 	PlotCmd.AddCommand(weekdayCmd)
 
 	PlotCmd.
@@ -81,7 +82,7 @@ func Init() {
 
 	PlotCmd.
 		PersistentFlags().
-		StringSliceVarP(&authors, "author", "a", config.Config.Plot.Authors, "Authors")
+		StringSliceVarP(&authors, "author", "a", config.Config.Authors, "Authors")
 
 	PlotCmd.
 		PersistentFlags().

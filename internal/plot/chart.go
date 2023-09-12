@@ -136,19 +136,19 @@ func (p *chart[T]) generateDataMap(
 	createKey func(c *chart[T], l *data.Log) string,
 	createData func(c *chart[T], l *data.Log) dataValueMap,
 ) dataMap {
-	accumulatedLogs := make(dataMap)
+	data := make(dataMap)
 
 	for _, log := range p.logs.Logs {
 		rootKey := createKey(p, log)
 
-		if _, ok := accumulatedLogs[rootKey]; !ok {
-			accumulatedLogs[rootKey] = make(dataValueMap)
+		if _, ok := data[rootKey]; !ok {
+			data[rootKey] = make(dataValueMap)
 		}
 
 		for key, value := range createData(p, log) {
-			accumulatedLogs[rootKey][key] += value
+			data[rootKey][key] += value
 		}
 	}
 
-	return accumulatedLogs
+	return data
 }

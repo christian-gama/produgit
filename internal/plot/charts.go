@@ -357,6 +357,60 @@ func (w *weekday) createLabels(logs *data.Logs) []string {
 	}
 }
 
+// topAuthors is a struct that represents the top authors plot.
+type topAuthors struct {
+	pie *pie
+}
+
+// NewTopAuthors creates a new top authors plot.
+func NewTopAuthors(
+	logs *data.Logs,
+	config *Config,
+) *topAuthors {
+	return &topAuthors{
+		pie: newPie(
+			logs,
+			"top_authors",
+			config,
+		),
+	}
+}
+
+// Plot generates the weekday chart.
+func (t *topAuthors) Plot() error {
+	logs, err := data.Filter(
+		t.pie.logs,
+		data.WithDate(t.pie.startDate, t.pie.endDate),
+		data.WithAuthors(t.pie.authors),
+		data.WithMergeAuthors(t.pie.authors),
+	)
+	if err != nil {
+		return err
+	}
+
+	authorsLabel := t.createLabels(logs)
+	formattedData := t.pie.generateDataMap(
+		func(c *chart[*charts.Pie], l *data.Log) string {
+			return l.GetAuthor()
+		},
+		func(c *chart[*charts.Pie], l *data.Log) dataValueMap {
+			return dataValueMap{
+				l.GetAuthor(): l.GetPlus(),
+			}
+		},
+	)
+
+	t.pie.setGlobalOptions("Top Authors Report")
+	t.pie.generateSeries(authorsLabel, formattedData)
+
+	return t.pie.save()
+}
+
+// createLabels creates the labels for the weekday plot.
+func (t *topAuthors) createLabels(logs *data.Logs) []string {
+	return t.pie.authors
+}
+
 // contains is a helper function to check if a slice contains a string.
 func contains(slice []string, str string) bool {
 	for _, s := range slice {
