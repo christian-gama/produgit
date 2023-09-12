@@ -34,7 +34,7 @@ go install github.com/christian-gama/produgit@latest
 
 Example:
 ```sh
-produgit --dir "~/personal" --dir "~/work" --exclude "**path/to/ignore/*" --exclude "*.extension"
+produgit report --dir "~/personal" --dir "~/work" --exclude "**path/to/ignore/*" --exclude "*.extension"
 ```
 
 ### Plot
